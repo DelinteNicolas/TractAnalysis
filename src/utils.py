@@ -1,4 +1,27 @@
+import os
 import numpy as np
+import nibabel as nib
+
+
+def get_view_from_data(data_path: str):
+
+    img = nib.load(data_path)
+
+    view = get_acquisition_view(img.affine)
+
+    return view
+
+
+def print_views_from_data_folder(folder_path: str):
+
+    view_list = []
+
+    for filename in os.listdir(folder_path):
+        if '.nii' in filename:
+            view = get_view_from_data(folder_path+'/'+filename)
+            view_list.append(filename+'_'+view)
+
+    return view_list
 
 
 def get_acquisition_view(affine) -> str:
