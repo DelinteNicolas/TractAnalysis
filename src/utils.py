@@ -1,4 +1,5 @@
 import os
+import json
 import numpy as np
 import nibabel as nib
 
@@ -12,7 +13,7 @@ def get_view_from_data(data_path: str):
     return view
 
 
-def print_views_from_data_folder(folder_path: str):
+def get_views_from_data_folder(folder_path: str):
 
     view_list = []
 
@@ -22,6 +23,27 @@ def print_views_from_data_folder(folder_path: str):
             view_list.append(filename+'_'+view)
 
     return view_list
+
+
+def print_views_from_study_folder(folder_path: str):
+    '''
+
+
+    Parameters
+    ----------
+    folder_path : str
+        Path to study folder containing data_x folders
+
+    '''
+
+    view_list_tot = []
+
+    for filename in os.listdir(folder_path):
+        if os.path.isdir(folder_path+filename) and 'data_' in filename:
+            view_list = get_views_from_data_folder(folder_path+'/'+filename)
+            view_list_tot += view_list
+
+    json.dump(view_list_tot, open(folder_path+'subj_view.json', 'w'))
 
 
 def get_acquisition_view(affine) -> str:
