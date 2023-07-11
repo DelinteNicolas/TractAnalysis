@@ -1,2 +1,4 @@
+json
 nibabel
 numpy
+pilab-regis
