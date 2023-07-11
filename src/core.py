@@ -4,7 +4,7 @@ import json
 import numpy as np
 import nibabel as nib
 import matplotlib.pyplot as plt
-# from regis.core import find_transform, apply_transform
+from regis.core import find_transform, apply_transform
 from dipy.io.streamline import load_tractogram
 from dipy.tracking import utils
 
