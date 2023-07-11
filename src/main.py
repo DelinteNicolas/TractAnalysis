@@ -9,4 +9,4 @@ if __name__ == '__main__':
     # Checking views
     print_views_from_study_folder(root)
 
-    slurm_iter(root)
+    slurm_iter(root, patient_list=['sub01_E1'])
