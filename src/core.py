@@ -4,7 +4,7 @@ import json
 import numpy as np
 import nibabel as nib
 import matplotlib.pyplot as plt
-from regis.core import find_transform, apply_transform
+# from regis.core import find_transform, apply_transform
 from dipy.io.streamline import load_tractogram
 from dipy.tracking import utils
 
@@ -29,7 +29,6 @@ def connectivity_matrices(dwi_path: str, labels_path: str, streamlines_path: str
 
     dwi_data = nib.load(dwi_path).get_fdata()
     labels = nib.load(labels_path).get_fdata()
-    print(labels.shape)
 
     trk = load_tractogram(streamlines_path, 'same')
     trk.to_corner()
@@ -73,8 +72,7 @@ def connectivity_matrices(dwi_path: str, labels_path: str, streamlines_path: str
     plt.colorbar(im)
     plt.savefig(output_path + '_connectivity_matrix.png')
 
-    with open(output_path + '_connectivity_matrix.json', "w") as f:
-        json.dump(M, f)
+    np.save(output_path + '_connectivity_matrix.npy', M)
 
 
 def slurm_iter(root: str, patient_list: list = []):
@@ -110,21 +108,26 @@ def slurm_iter(root: str, patient_list: list = []):
 
 if __name__ == '__main__':
 
-    patient = sys.argv[1]
-    root = sys.argv[2]
+    # patient = sys.argv[1]
+    # root = sys.argv[2]
 
-    path_to_analysis_code = root.replace(
-        root.split('/')[-2] + '/', '') + 'TractAnalysis/'
+    # path_to_analysis_code = root.replace(
+    #     root.split('/')[-2] + '/', '') + 'TractAnalysis/'
 
-    fa_path = root + 'subjects/' + patient + '/dMRI/microstructure/dti/' + patient + '_FA.nii.gz'
-    atlas_path = path_to_analysis_code + 'data/atlas_desikan_killiany.nii.gz'
-    mni_fa_path = path_to_analysis_code + 'data/FSL_HCP1065_FA_1mm.nii.gz'
-    labels_path = root + 'subjects/' + patient + '/masks/' + patient + '_labels.nii.gz'
+    # fa_path = root + 'subjects/' + patient + '/dMRI/microstructure/dti/' + patient + '_FA.nii.gz'
+    # atlas_path = path_to_analysis_code + 'data/atlas_desikan_killiany.nii.gz'
+    # mni_fa_path = path_to_analysis_code + 'data/FSL_HCP1065_FA_1mm.nii.gz'
+    # labels_path = root + 'subjects/' + patient + '/masks/' + patient + '_labels.nii.gz'
 
-    register_atlas_to_subj(fa_path, atlas_path, mni_fa_path, labels_path)
+    # register_atlas_to_subj(fa_path, atlas_path, mni_fa_path, labels_path)
 
-    dwi_path = root + 'subjects/' + patient + '/dMRI/preproc/' + patient + '_dmri_preproc.nii.gz'
-    streamlines_path = root + 'subjects/' + patient + '/dMRI/tractography/' + patient + '_tractogram.trk'
-    matrix_path = root + 'subjects/' + patient + '/dMRI/tractography/' + patient
+    # dwi_path = root + 'subjects/' + patient + '/dMRI/preproc/' + patient + '_dmri_preproc.nii.gz'
+    # streamlines_path = root + 'subjects/' + patient + '/dMRI/tractography/' + patient + '_tractogram.trk'
+    # matrix_path = root + 'subjects/' + patient + '/dMRI/tractography/' + patient
+
+    dwi_path = 'C:/Users/dausort/Downloads/sub01_E1_dmri_preproc.nii.gz'
+    labels_path = 'C:/Users/dausort/Downloads/sub01_E1_labels.nii.gz'
+    streamlines_path = 'C:/Users/dausort/Downloads/sub01_E1_tracto_25_250000_1.trk'
+    matrix_path = 'C:/Users/dausort/Downloads/sub01_E1'
 
     connectivity_matrices(dwi_path, labels_path, streamlines_path, matrix_path)
