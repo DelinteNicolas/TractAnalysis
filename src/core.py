@@ -5,7 +5,8 @@ import numpy as np
 import nibabel as nib
 import matplotlib.pyplot as plt
 from regis.core import find_transform, apply_transform
-from dipy.io.streamline import load_tractogram
+from dipy.io.streamline import load_tractogram, save_trk
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.tracking import utils
 
 
@@ -83,6 +84,31 @@ def connectivity_matrices(dwi_path: str, labels_path: str, streamlines_path: str
     plt.xlabel("Labels")
 
     np.save(output_path + '_connectivity_matrix.npy', M)
+
+
+def extract_streamline(edge: tuple, dwi_path: str, labels_path: str,
+                       streamlines_path: str, output_dir: str):
+
+    labels = nib.load(labels_path).get_fdata()
+
+    img = nib.load(dwi_path)
+    affine = img.affine
+
+    trk = load_tractogram(streamlines_path, 'same')
+    trk.to_vox()
+    trk.to_corner()
+    streamlines = trk.streamlines
+
+    streamlines = utils.target(streamlines, affine, labels[labels == edge[0]],
+                               include=True)
+    streamlines = utils.target(streamlines, affine, labels[labels == edge[1]],
+                               include=True)
+
+    tract = StatefulTractogram(streamlines, img, Space.RASMM)
+
+    filename = streamlines_path[:-4]+'_'+str(edge[0])+'_'+str(edge[1])
+
+    save_trk(tract, output_dir+filename+'.trk')
 
 
 def slurm_iter(root: str, patient_list: list = []):
