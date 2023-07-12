@@ -43,7 +43,7 @@ def print_views_from_study_folder(folder_path: str):
             view_list = get_views_from_data_folder(folder_path+'/'+filename)
             view_list_tot += view_list
 
-    json.dump(view_list_tot, open(folder_path+'subj_view.json', 'w'))
+    json.dump(view_list_tot, open(folder_path+'subjects/subj_view.json', 'w'))
 
 
 def get_acquisition_view(affine) -> str:

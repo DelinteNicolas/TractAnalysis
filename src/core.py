@@ -25,9 +25,8 @@ def register_atlas_to_subj(fa_path: str, atlas_path: str, mni_fa_path: str,
                     output_path=output_path, labels=True)
 
 
-def connectivity_matrices(dwi_path: str, labels_path: str, streamlines_path: str, output_path: str):
+def connectivity_matrices(labels_path: str, streamlines_path: str, output_path: str):
 
-    dwi_data = nib.load(dwi_path).get_fdata()
     labels = nib.load(labels_path).get_fdata()
 
     trk = load_tractogram(streamlines_path, 'same')
@@ -41,21 +40,29 @@ def connectivity_matrices(dwi_path: str, labels_path: str, streamlines_path: str
     right_labels = []
     middle_labels = []
     for value in unique_values_and_count[0]:
-        if 2000 <= value < 3000 or 4000 <= value < 5000 or value == 5002 or 43 <= value <= 63:  # Right label values
+        # Right label values
+        if 2000 <= value < 3000 or 4000 <= value < 5000 or value == 5002 or 43 <= value <= 63:
             right_labels.append(value)
-        elif 14 <= value <= 16 or value == 24 or value == 85 or 251 <= value <= 255:  # Middle label values
+        # Middle label values
+        elif 14 <= value <= 16 or value == 24 or value == 85 or 251 <= value <= 255:
             middle_labels.append(value)
-        else:  # Left label values
+        # Left label values
+        else:
             left_labels.append(value)
     left_labels = np.array(left_labels)
     right_labels = np.array(right_labels)
     middle_labels = np.array(middle_labels)
-    labels_sorted = np.concatenate((left_labels, middle_labels, right_labels), axis=None)  # Concatenate to have an array that contains in order the left labels, then the middle ones and the right ones
+    # Concatenate to have an array that contains in order the left labels, then
+    # the middle ones and the right ones
+    labels_sorted = np.concatenate((left_labels, middle_labels, right_labels),
+                                   axis=None)
 
-    new_labels_value = np.linspace(0, len(labels_sorted) - 1, len(labels_sorted))
+    new_labels_value = np.linspace(
+        0, len(labels_sorted) - 1, len(labels_sorted))
     new_label_map = np.zeros([len(labels), len(labels[0]), len(labels[0][0])])
     for i in range(len(labels_sorted)):
-        new_label_map += np.where(labels == labels_sorted[i], new_labels_value[i], 0)
+        new_label_map += np.where(labels ==
+                                  labels_sorted[i], new_labels_value[i], 0)
     new_label_map = np.round(new_label_map).astype(int)
 
     M, grouping = utils.connectivity_matrix(streams_data, affine,
@@ -71,6 +78,8 @@ def connectivity_matrices(dwi_path: str, labels_path: str, streamlines_path: str
     im = plt.imshow(np.log1p(M * 100000), interpolation='nearest')
     plt.colorbar(im)
     plt.savefig(output_path + '_connectivity_matrix.png')
+    plt.title('Connectivity matrix')
+    plt.xlabel("Labels")
 
     np.save(output_path + '_connectivity_matrix.npy', M)
 
@@ -114,20 +123,17 @@ if __name__ == '__main__':
     path_to_analysis_code = root.replace(
         root.split('/')[-2] + '/', '') + 'TractAnalysis/'
 
-    fa_path = root + 'subjects/' + patient + '/dMRI/microstructure/dti/' + patient + '_FA.nii.gz'
+    fa_path = root + 'subjects/' + patient + \
+        '/dMRI/microstructure/dti/' + patient + '_FA.nii.gz'
     atlas_path = path_to_analysis_code + 'data/atlas_desikan_killiany.nii.gz'
     mni_fa_path = path_to_analysis_code + 'data/FSL_HCP1065_FA_1mm.nii.gz'
-    labels_path = root + 'subjects/' + patient + '/masks/' + patient + '_labels.nii.gz'
+    labels_path = root + 'subjects/' + patient + \
+        '/masks/' + patient + '_labels.nii.gz'
 
     register_atlas_to_subj(fa_path, atlas_path, mni_fa_path, labels_path)
 
-    dwi_path = root + 'subjects/' + patient + '/dMRI/preproc/' + patient + '_dmri_preproc.nii.gz'
-    streamlines_path = root + 'subjects/' + patient + '/dMRI/tractography/' + patient + '_tractogram.trk'
+    streamlines_path = root + 'subjects/' + patient + \
+        '/dMRI/tractography/' + patient + '_tractogram.trk'
     matrix_path = root + 'subjects/' + patient + '/dMRI/tractography/' + patient
 
-    # dwi_path = 'C:/Users/dausort/Downloads/sub01_E1_dmri_preproc.nii.gz'
-    # labels_path = 'C:/Users/dausort/Downloads/sub01_E1_labels.nii.gz'
-    # streamlines_path = 'C:/Users/dausort/Downloads/sub01_E1_tracto_25_250000_1.trk'
-    # matrix_path = 'C:/Users/dausort/Downloads/sub01_E1'
-
-    connectivity_matrices(dwi_path, labels_path, streamlines_path, matrix_path)
+    connectivity_matrices(labels_path, streamlines_path, matrix_path)
