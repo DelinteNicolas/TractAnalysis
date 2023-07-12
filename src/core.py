@@ -1,13 +1,16 @@
 import os
 import sys
 import json
+import warnings
 import numpy as np
 import nibabel as nib
 import matplotlib.pyplot as plt
-from regis.core import find_transform, apply_transform
-from dipy.io.streamline import load_tractogram, save_trk
-from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.tracking import utils
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    from regis.core import find_transform, apply_transform
+    from dipy.io.streamline import load_tractogram, save_trk
+    from dipy.io.stateful_tractogram import Space, StatefulTractogram
+    from dipy.tracking import utils
 
 
 def register_atlas_to_subj(fa_path: str, atlas_path: str, mni_fa_path: str,
