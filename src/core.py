@@ -25,7 +25,8 @@ def register_atlas_to_subj(fa_path: str, atlas_path: str, mni_fa_path: str,
                     output_path=output_path, labels=True)
 
 
-def connectivity_matrices(labels_path: str, streamlines_path: str, output_path: str):
+def connectivity_matrices(dwi_path: str, labels_path: str, streamlines_path: str,
+                          output_path: str):
 
     labels = nib.load(labels_path).get_fdata()
 
@@ -132,8 +133,10 @@ if __name__ == '__main__':
 
     register_atlas_to_subj(fa_path, atlas_path, mni_fa_path, labels_path)
 
+    dwi_path = root + 'subjects/' + patient + \
+        '/dMRI/preproc/' + patient + '_dmri_preproc.nii.gz'
     streamlines_path = root + 'subjects/' + patient + \
         '/dMRI/tractography/' + patient + '_tractogram.trk'
     matrix_path = root + 'subjects/' + patient + '/dMRI/tractography/' + patient
 
-    connectivity_matrices(labels_path, streamlines_path, matrix_path)
+    connectivity_matrices(dwi_path, labels_path, streamlines_path, matrix_path)
