@@ -106,17 +106,18 @@ def significance_level(list_subject: str, root: str, output_path: str):
     list_E3 = []
 
     for i in range(len(list_subject)):
-        if 'E1' in str(list_subject[i]):
-            path = root + 'subjects/' + str(list_subject[i]) + '/dMRI/tractography/' + str(list_subject[i]) + '_connectivity_matrix.npy'
+
+        path = root + 'subjects/' + str(list_subject[i]) + '/dMRI/tractography/' + str(list_subject[i]) + '_connectivity_matrix.npy'
+        try:
             matrix = np.load(path)
+        except FileNotFoundError:
+            continue
+
+        if 'E1' in str(list_subject[i]):
             list_E1.append(matrix)
         elif 'E2' in str(list_subject[i]):
-            path = root + 'subjects/' + str(list_subject[i]) + '/dMRI/tractography/' + str(list_subject[i]) + '_connectivity_matrix.npy'
-            matrix = np.load(path)
             list_E2.append(matrix)
         else:
-            path = root + 'subjects/' + str(list_subject[i]) + '/dMRI/tractography/' + str(list_subject[i]) + '_connectivity_matrix.npy'
-            matrix = np.load(path)
             list_E3.append(matrix)
 
     list_E1 = np.stack(list_E1, axis=2)
@@ -124,26 +125,20 @@ def significance_level(list_subject: str, root: str, output_path: str):
     list_E3 = np.stack(list_E3, axis=2)
 
     # On part du principe que les entrées des matrices sont les mêmes mais à vérif
-    # Temps 1 - Temps 2
     pval_E12 = np.zeros((list_E1.shape[0], list_E1.shape[1]))
-    for i in range(list_E1.shape[0]):
-        for j in range(list_E1.shape[1]):
-            tstat, pval = ttest_ind(list_E1[i, j, :], list_E2[i, j, :], alternative='two-sided')
-            pval_E12[i, j] = pval
-
-    # Temps 1 - Temps 3
     pval_E13 = np.zeros((list_E1.shape[0], list_E1.shape[1]))
-    for i in range(list_E1.shape[0]):
-        for j in range(list_E1.shape[1]):
-            _, pval = ttest_ind(list_E1[i, j, :], list_E3[i, j, :], alternative='two-sided')
-            pval_E13[i, j] = pval
-
-    # Temps 1 - Temps 2
     pval_E23 = np.zeros((list_E1.shape[0], list_E1.shape[1]))
+
     for i in range(list_E1.shape[0]):
         for j in range(list_E1.shape[1]):
-            _, pval = ttest_ind(list_E2[i, j, :], list_E3[i, j, :], alternative='two-sided')
-            pval_E23[i, j] = pval
+            _, pval_12 = ttest_ind(list_E1[i, j, :], list_E2[i, j, :], alternative='two-sided')
+            pval_E12[i, j] = pval_12
+
+            _, pval_13 = ttest_ind(list_E1[i, j, :], list_E3[i, j, :], alternative='two-sided')
+            pval_E13[i, j] = pval_13
+
+            _, pval_23 = ttest_ind(list_E2[i, j, :], list_E3[i, j, :], alternative='two-sided')
+            pval_E23[i, j] = pval_23
 
     pval_all = pval_E12.append(pval_E13).append(pval_E23)
     pval_all = np.stack(pval_all, axis=2)
