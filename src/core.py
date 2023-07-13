@@ -86,8 +86,6 @@ def connectivity_matrices(dwi_path: str, labels_path: str, streamlines_path: str
     M = M.astype('float32')
     M = M / np.sum(M)
 
-    # M = M[1:, 1:]
-
     fig, ax = plt.subplots()
     ax.imshow(np.log1p(M * 100000), interpolation='nearest')
     ax.set_yticks(np.arange(len(area_sorted)))
@@ -99,7 +97,7 @@ def connectivity_matrices(dwi_path: str, labels_path: str, streamlines_path: str
 
     return new_label_map
 
-def significance_level(list_subject: str, root: str):
+def significance_level(list_subject: str, root: str, output_path: str):
 
     with open(list_subject, 'r') as read_file:
         list_subject = json.load(read_file)
@@ -147,6 +145,11 @@ def significance_level(list_subject: str, root: str):
         for j in range(list_E1.shape[1]):
             _, pval = ttest_ind(list_E2[i, j, :], list_E3[i, j, :], alternative='two-sided')
             pval_E23[i, j] = pval
+
+    pval_all = pval_E12.append(pval_E13).append(pval_E23)
+    pval_all = np.stack(pval_all, axis=2)
+
+    np.save(output_path + '_pvals_E12_E13_E23.npy', pval_all)
 
     return pval_E12, pval_E13, pval_E23
 
@@ -201,9 +204,9 @@ if __name__ == '__main__':
     matrix_path = root + 'subjects/' + patient + '/dMRI/tractography/' + patient
 
     subjects_list = root + 'subjects/subj_list.json'
-
     freeSurfer_labels = path_to_analysis_code + 'data/FreeSurfer_labels.xlsx'
+    output_path = path_to_analysis_code + 'output_analysis/'
 
     new_label_map = connectivity_matrices(dwi_path, labels_path, streamlines_path, matrix_path, freeSurfer_labels)
 
-    pval_E12, pval_E13, pval_E23 = significance_level(subjects_list, root)
+    pval_E12, pval_E13, pval_E23 = significance_level(subjects_list, root, output_path)
