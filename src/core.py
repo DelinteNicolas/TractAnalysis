@@ -151,7 +151,6 @@ def significance_level(list_subject: str, root: str, output_path: str):
 
     np.save(output_path + '_pvals_E12_E13_E23.npy', pval_all)
 
-    return pval_E12, pval_E13, pval_E23
 
 def slurm_iter(root: str, patient_list: list = []):
     '''
@@ -208,5 +207,3 @@ if __name__ == '__main__':
     output_path = path_to_analysis_code + 'output_analysis/'
 
     new_label_map = connectivity_matrices(dwi_path, labels_path, streamlines_path, matrix_path, freeSurfer_labels)
-
-    pval_E12, pval_E13, pval_E23 = significance_level(subjects_list, root, output_path)
