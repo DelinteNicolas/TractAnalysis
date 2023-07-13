@@ -3,7 +3,6 @@ import sys
 import json
 import numpy as np
 import nibabel as nib
-import seaborn as sns
 import pandas as pd
 import matplotlib.pyplot as plt
 from regis.core import find_transform, apply_transform
