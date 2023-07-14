@@ -11,4 +11,4 @@
 #SBATCH --output='/home/users/n/d/ndelinte/Python/slurmJob.out'
 #SBATCH --error='/home/users/n/d/ndelinte/Python/slurmJob.err'
         
-python $1 $2 $3
+python $1 $2 $3 $4
