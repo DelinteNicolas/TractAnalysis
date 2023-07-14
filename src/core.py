@@ -267,8 +267,8 @@ def extract_streamline(edge: tuple, dwi_path: str, labels_path: str,
     affine = img.affine
 
     trk = load_tractogram(streamlines_path, 'same')
-    trk.to_vox()
-    trk.to_corner()
+    # trk.to_vox()
+    # trk.to_corner()
     streamlines = trk.streamlines
 
     streamlines = utils.target(streamlines, affine,
