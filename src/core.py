@@ -170,9 +170,14 @@ def significance_level(list_subject: list, root: str, output_path: str):
     np.save(output_path + '_pvals_E12_E13_E23.npy', pval_all)
 
 
+def to_float64(val):
+    """Used if *val* is an instance of numpy.float32."""
+    return np.float64(val)
+
+
 def get_edges_of_interest(pval_file: str, output_path: str) -> list:
     '''
-    Rtuens the edges corresponding to low p-values
+    Returns the edges corresponding to low p-values
 
     Parameters
     ----------
@@ -206,7 +211,8 @@ def get_edges_of_interest(pval_file: str, output_path: str) -> list:
     mi = np.unravel_index(np.argmin(m), m.shape)
     edge = mi[:2]
 
-    json.dump([edge], open(output_path+'selected_edges.json', 'w'))
+    json.dump([edge], open(output_path+'selected_edges.json', 'w'),
+              default=to_float64)
 
 
 def extract_streamline(edge: tuple, dwi_path: str, labels_path: str,
