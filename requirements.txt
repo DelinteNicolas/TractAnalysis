@@ -1,4 +1,5 @@
 json
 nibabel
 numpy
+pandas
 pilab-regis

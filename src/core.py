@@ -13,6 +13,7 @@ with warnings.catch_warnings():
     from dipy.io.streamline import load_tractogram, save_trk
     from dipy.io.stateful_tractogram import Space, StatefulTractogram
     from dipy.tracking import utils
+    from dipy.tracking.streamline import Streamlines
 
 
 def register_atlas_to_subj(fa_path: str, atlas_path: str, mni_fa_path: str,
@@ -259,11 +260,10 @@ def extract_streamline(edge: tuple, dwi_path: str, labels_path: str,
     None.
 
     '''
-    print(edge, type(edge))
 
     labels = nib.load(labels_path).get_fdata()
 
-    img = nib.load(dwi_path)
+    img = nib.load(labels_path)
     affine = img.affine
 
     trk = load_tractogram(streamlines_path, 'same')
@@ -271,12 +271,11 @@ def extract_streamline(edge: tuple, dwi_path: str, labels_path: str,
     # trk.to_corner()
     streamlines = trk.streamlines
 
-    streamlines = utils.target(streamlines, affine,
-                               labels[labels == int(edge[0])],
-                               include=True)
-    streamlines = utils.target(streamlines, affine,
-                               labels[labels == int(edge[1])],
-                               include=True)
+    mask1 = np.where(labels == int(edge[0]), 1, 0)
+    mask2 = np.where(labels == int(edge[1]), 1, 0)
+
+    streamlines = utils.target(streamlines, affine, mask1, include=True)
+    streamlines = utils.target(streamlines, affine, mask2, include=True)
 
     tract = StatefulTractogram(streamlines, img, Space.RASMM)
 
