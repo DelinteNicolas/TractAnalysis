@@ -34,7 +34,7 @@ if code == 'connectivity':
     register_atlas_to_subj(fa_path, atlas_path, mni_fa_path, labels_path)
 
     new_label_map = connectivity_matrices(
-        dwi_path, labels_path, streamlines_path, output_path, freeSurfer_labels)
+        dwi_path, labels_path, streamlines_path, output_path, freeSurfer_labels, subjects_list)
 
 elif code == 'extraction':
 
