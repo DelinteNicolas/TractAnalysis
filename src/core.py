@@ -270,9 +270,11 @@ def extract_streamline(edge: tuple, dwi_path: str, labels_path: str,
     trk.to_corner()
     streamlines = trk.streamlines
 
-    streamlines = utils.target(streamlines, affine, labels[labels == edge[0]],
+    streamlines = utils.target(streamlines, affine,
+                               labels[labels == int(edge[0])],
                                include=True)
-    streamlines = utils.target(streamlines, affine, labels[labels == edge[1]],
+    streamlines = utils.target(streamlines, affine,
+                               labels[labels == int(edge[1])],
                                include=True)
 
     tract = StatefulTractogram(streamlines, img, Space.RASMM)
