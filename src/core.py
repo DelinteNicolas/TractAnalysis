@@ -1,18 +1,42 @@
 import os
 import sys
 import json
+import warnings
 import numpy as np
 import nibabel as nib
 import pandas as pd
 import matplotlib.pyplot as plt
-from regis.core import find_transform, apply_transform
-from dipy.io.streamline import load_tractogram
-from dipy.tracking import utils
 from scipy.stats import ttest_ind
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    from regis.core import find_transform, apply_transform
+    from dipy.io.streamline import load_tractogram, save_trk
+    from dipy.io.stateful_tractogram import Space, StatefulTractogram
+    from dipy.tracking import utils
+    from dipy.tracking.streamline import Streamlines
 
 
 def register_atlas_to_subj(fa_path: str, atlas_path: str, mni_fa_path: str,
                            output_path: str):
+    '''
+    Two-step registration to obtain label in the diffusion space.
+
+    Parameters
+    ----------
+    fa_path : str
+        Path to FA file.
+    atlas_path : str
+        DESCRIPTION.
+    mni_fa_path : str
+        DESCRIPTION.
+    output_path : str
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    '''
 
     map_desikan_to_fa = find_transform(atlas_path, mni_fa_path,
                                        only_affine=True)
@@ -29,7 +53,6 @@ def register_atlas_to_subj(fa_path: str, atlas_path: str, mni_fa_path: str,
 
 def connectivity_matrices(dwi_path: str, labels_path: str, streamlines_path: str, output_path: str, freeSurfer_labels: str):
 
-    dwi_data = nib.load(dwi_path).get_fdata()
     labels = nib.load(labels_path).get_fdata()
 
     trk = load_tractogram(streamlines_path, 'same')
@@ -63,17 +86,20 @@ def connectivity_matrices(dwi_path: str, labels_path: str, streamlines_path: str
                     middle_labels.append(values[i])
                     middle_area.append(df['Area'][j])
 
-    labels_sorted = np.append(np.append(right_labels, middle_labels), left_labels)
+    labels_sorted = np.append(
+        np.append(right_labels, middle_labels), left_labels)
     a = np.argwhere(labels_sorted == 0)
 
     labels_sorted = np.delete(labels_sorted, 50)
     area_sorted = np.append(np.append(right_area, middle_area), left_area)
     area_sorted = np.delete(area_sorted, 50)
 
-    new_labels_value = np.linspace(0, len(labels_sorted) - 1, len(labels_sorted))
+    new_labels_value = np.linspace(
+        0, len(labels_sorted) - 1, len(labels_sorted))
     new_label_map = np.zeros([len(labels), len(labels[0]), len(labels[0][0])])
     for i in range(len(labels_sorted)):
-        new_label_map += np.where(labels == labels_sorted[i], new_labels_value[i], 0)
+        new_label_map += np.where(labels ==
+                                  labels_sorted[i], new_labels_value[i], 0)
     new_label_map = new_label_map.astype('int64')
 
     M, grouping = utils.connectivity_matrix(streams_data, affine,
@@ -91,10 +117,13 @@ def connectivity_matrices(dwi_path: str, labels_path: str, streamlines_path: str
     ax.set_yticklabels(area_sorted)
 
     plt.savefig(output_path + '_connectivity_matrix.png')
+    plt.title('Connectivity matrix')
+    plt.xlabel("Labels")
 
     np.save(output_path + '_connectivity_matrix.npy', M)
 
     return new_label_map
+
 
 def significance_level(list_subject: list, root: str, output_path: str):
 
@@ -107,7 +136,8 @@ def significance_level(list_subject: list, root: str, output_path: str):
 
     for i in range(len(list_subject)):
 
-        path = root + 'subjects/' + str(list_subject[i]) + '/dMRI/tractography/' + str(list_subject[i]) + '_connectivity_matrix.npy'
+        path = root + 'subjects/' + str(list_subject[i]) + '/dMRI/tractography/' + str(
+            list_subject[i]) + '_connectivity_matrix.npy'
         try:
             matrix = np.load(path)
         except FileNotFoundError:
@@ -131,17 +161,20 @@ def significance_level(list_subject: list, root: str, output_path: str):
 
     for i in range(list_E1.shape[0]):
         for j in range(list_E1.shape[1]):
-            _, pval_12 = ttest_ind(list_E1[i, j, :], list_E2[i, j, :], alternative='two-sided')
+            _, pval_12 = ttest_ind(
+                list_E1[i, j, :], list_E2[i, j, :], alternative='two-sided')
             if np.isnan(pval_12):
                 pval_12 = 1000
             pval_E12[i, j] = pval_12
 
-            _, pval_13 = ttest_ind(list_E1[i, j, :], list_E3[i, j, :], alternative='two-sided')
+            _, pval_13 = ttest_ind(
+                list_E1[i, j, :], list_E3[i, j, :], alternative='two-sided')
             if np.isnan(pval_13):
                 pval_13 = 1000
             pval_E13[i, j] = pval_13
 
-            _, pval_23 = ttest_ind(list_E2[i, j, :], list_E3[i, j, :], alternative='two-sided')
+            _, pval_23 = ttest_ind(
+                list_E2[i, j, :], list_E3[i, j, :], alternative='two-sided')
             if np.isnan(pval_23):
                 pval_23 = 1000
             pval_E23[i, j] = pval_23
@@ -157,14 +190,110 @@ def significance_level(list_subject: list, root: str, output_path: str):
     np.save(output_path + '_pvals_E12_E13_E23.npy', pval_all)
 
 
-def slurm_iter(root: str, patient_list: list = []):
+def to_float64(val):
+    """
+    Used if *val* is an instance of numpy.float32.
+    """
+
+    return np.float64(val)
+
+
+def get_edges_of_interest(pval_file: str, output_path: str) -> list:
+    '''
+    Returns the edges corresponding to low p-values
+
+    Parameters
+    ----------
+    pval_file : str
+        Path to .npy containing p-values of connectivity matrices
+
+    Returns
+    -------
+    list
+        List of tuples containing the index of the regions cennected by the edge
+        interest
+
     '''
 
+    m = np.load(pval_file)
+
+    # Removing duplicates due to symmetry
+    m = np.transpose(m, (2, 0, 1))
+    m = np.tril(m, k=0)
+    m[m == 0] = 1
+    m = np.transpose(m, (1, 2, 0))
+
+    # Multiple comparison pval correction
+    comparisons = (m.shape[0]*m.shape[1])/2-m.shape[0]/2
+    pval = 0.05/comparisons
+
+    l = np.argwhere(m < pval)
+    # To be continued ...
+
+    # Temporary candidate
+    mi = np.unravel_index(np.argmin(m), m.shape)
+    edge = tuple(mi[:2])
+
+    json.dump([edge], open(output_path+'selected_edges.json', 'w'),
+              default=to_float64)
+
+
+def extract_streamline(edge: tuple, dwi_path: str, labels_path: str,
+                       streamlines_path: str):
+    '''
+    Creates a new file with the streamlines connecting both regions specified in
+    the tuple 'edge'.
+
+    Parameters
+    ----------
+    edge : tuple
+        Index of the regions of interest. Ex: (1,23)
+    dwi_path : str
+        Path to diffusion data.
+    labels_path : str
+        Path to volume containing the indexes.
+    streamlines_path : str
+        Path to tractogram.
+
+    Returns
+    -------
+    None.
+
+    '''
+
+    labels = nib.load(labels_path).get_fdata()
+
+    img = nib.load(labels_path)
+    affine = img.affine
+
+    trk = load_tractogram(streamlines_path, 'same')
+    # trk.to_vox()
+    # trk.to_corner()
+    streamlines = trk.streamlines
+
+    mask1 = np.where(labels == int(edge[0]), 1, 0)
+    mask2 = np.where(labels == int(edge[1]), 1, 0)
+
+    streamlines = utils.target(streamlines, affine, mask1, include=True)
+    streamlines = utils.target(streamlines, affine, mask2, include=True)
+
+    tract = StatefulTractogram(streamlines, img, Space.RASMM)
+
+    filename = streamlines_path[:-4]+'_'+str(edge[0])+'_'+str(edge[1])
+
+    save_trk(tract, filename+'.trk')
+
+
+def slurm_iter(root: str, code: str, patient_list: list = []):
+    '''
+    Launches the scripts.py pyhton file for all patients in patient_list
 
     Parameters
     ----------
     root : str
         Path to study
+    code : str
+        Part of the script to launch. Either 'connectivity' or 'extraction'.
     patient_list : list, optional
         If not specified, runs on all patients in the study. The default is [].
 
@@ -179,35 +308,10 @@ def slurm_iter(root: str, patient_list: list = []):
 
     path_to_analysis_code = root.replace(
         root.split('/')[-2] + '/', '') + 'TractAnalysis/'
-    path_to_core = path_to_analysis_code + 'src/core.py'
+    path_to_code = path_to_analysis_code + 'src/scripts.py'
 
     for patient in patient_list:
 
         os.system('sbatch -J ' + patient + ' '
                   + path_to_analysis_code + 'slurm/submitIter.sh '
-                  + patient + ' ' + path_to_core + ' ' + root)
-
-
-if __name__ == '__main__':
-    patient = sys.argv[1]
-    root = sys.argv[2]
-
-    path_to_analysis_code = root.replace(
-        root.split('/')[-2] + '/', '') + 'TractAnalysis/'
-
-    fa_path = root + 'subjects/' + patient + '/dMRI/microstructure/dti/' + patient + '_FA.nii.gz'
-    atlas_path = path_to_analysis_code + 'data/atlas_desikan_killiany.nii.gz'
-    mni_fa_path = path_to_analysis_code + 'data/FSL_HCP1065_FA_1mm.nii.gz'
-    labels_path = root + 'subjects/' + patient + '/masks/' + patient + '_labels.nii.gz'
-
-    register_atlas_to_subj(fa_path, atlas_path, mni_fa_path, labels_path)
-
-    dwi_path = root + 'subjects/' + patient + '/dMRI/preproc/' + patient + '_dmri_preproc.nii.gz'
-    streamlines_path = root + 'subjects/' + patient + '/dMRI/tractography/' + patient + '_tractogram.trk'
-    matrix_path = root + 'subjects/' + patient + '/dMRI/tractography/' + patient
-
-    subjects_list = root + 'subjects/subj_list.json'
-    freeSurfer_labels = path_to_analysis_code + 'data/FreeSurfer_labels.xlsx'
-    output_path = path_to_analysis_code + 'output_analysis/'
-
-    new_label_map = connectivity_matrices(dwi_path, labels_path, streamlines_path, matrix_path, freeSurfer_labels)
+                  + path_to_code + ' ' + patient + ' ' + root + ' ' + code)
