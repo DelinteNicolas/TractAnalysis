@@ -1,14 +1,19 @@
 import os
 import sys
 import json
+import warnings
 import numpy as np
 import nibabel as nib
 import pandas as pd
 import matplotlib.pyplot as plt
-from regis.core import find_transform, apply_transform
-from dipy.io.streamline import load_tractogram
-from dipy.tracking import utils
 from scipy.stats import ttest_ind
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    from regis.core import find_transform, apply_transform
+    from dipy.io.streamline import load_tractogram, save_trk
+    from dipy.io.stateful_tractogram import Space, StatefulTractogram
+    from dipy.tracking import utils
+
 
 
 def register_atlas_to_subj(fa_path: str, atlas_path: str, mni_fa_path: str,
@@ -27,9 +32,10 @@ def register_atlas_to_subj(fa_path: str, atlas_path: str, mni_fa_path: str,
                     output_path=output_path, labels=True)
 
 
+
 def connectivity_matrices(dwi_path: str, labels_path: str, streamlines_path: str, output_path: str, freeSurfer_labels: str):
 
-    dwi_data = nib.load(dwi_path).get_fdata()
+
     labels = nib.load(labels_path).get_fdata()
 
     trk = load_tractogram(streamlines_path, 'same')
@@ -70,11 +76,14 @@ def connectivity_matrices(dwi_path: str, labels_path: str, streamlines_path: str
     area_sorted = np.append(np.append(right_area, middle_area), left_area)
     area_sorted = np.delete(area_sorted, 50)
 
-    new_labels_value = np.linspace(0, len(labels_sorted) - 1, len(labels_sorted))
+
+    new_labels_value = np.linspace(
+        0, len(labels_sorted) - 1, len(labels_sorted))
     new_label_map = np.zeros([len(labels), len(labels[0]), len(labels[0][0])])
     for i in range(len(labels_sorted)):
         new_label_map += np.where(labels == labels_sorted[i], new_labels_value[i], 0)
     new_label_map = new_label_map.astype('int64')
+
 
     M, grouping = utils.connectivity_matrix(streams_data, affine,
                                             new_label_map,
@@ -91,6 +100,8 @@ def connectivity_matrices(dwi_path: str, labels_path: str, streamlines_path: str
     ax.set_yticklabels(area_sorted)
 
     plt.savefig(output_path + '_connectivity_matrix.png')
+    plt.title('Connectivity matrix')
+    plt.xlabel("Labels")
 
     np.save(output_path + '_connectivity_matrix.npy', M)
 
@@ -157,6 +168,31 @@ def significance_level(list_subject: list, root: str, output_path: str):
     np.save(output_path + '_pvals_E12_E13_E23.npy', pval_all)
 
 
+def extract_streamline(edge: tuple, dwi_path: str, labels_path: str,
+                       streamlines_path: str, output_dir: str):
+
+    labels = nib.load(labels_path).get_fdata()
+
+    img = nib.load(dwi_path)
+    affine = img.affine
+
+    trk = load_tractogram(streamlines_path, 'same')
+    trk.to_vox()
+    trk.to_corner()
+    streamlines = trk.streamlines
+
+    streamlines = utils.target(streamlines, affine, labels[labels == edge[0]],
+                               include=True)
+    streamlines = utils.target(streamlines, affine, labels[labels == edge[1]],
+                               include=True)
+
+    tract = StatefulTractogram(streamlines, img, Space.RASMM)
+
+    filename = streamlines_path[:-4]+'_'+str(edge[0])+'_'+str(edge[1])
+
+    save_trk(tract, output_dir+filename+'.trk')
+
+
 def slurm_iter(root: str, patient_list: list = []):
     '''
 
@@ -195,15 +231,19 @@ if __name__ == '__main__':
     path_to_analysis_code = root.replace(
         root.split('/')[-2] + '/', '') + 'TractAnalysis/'
 
-    fa_path = root + 'subjects/' + patient + '/dMRI/microstructure/dti/' + patient + '_FA.nii.gz'
+    fa_path = root + 'subjects/' + patient + \
+        '/dMRI/microstructure/dti/' + patient + '_FA.nii.gz'
     atlas_path = path_to_analysis_code + 'data/atlas_desikan_killiany.nii.gz'
     mni_fa_path = path_to_analysis_code + 'data/FSL_HCP1065_FA_1mm.nii.gz'
-    labels_path = root + 'subjects/' + patient + '/masks/' + patient + '_labels.nii.gz'
+    labels_path = root + 'subjects/' + patient + \
+        '/masks/' + patient + '_labels.nii.gz'
 
     register_atlas_to_subj(fa_path, atlas_path, mni_fa_path, labels_path)
 
-    dwi_path = root + 'subjects/' + patient + '/dMRI/preproc/' + patient + '_dmri_preproc.nii.gz'
-    streamlines_path = root + 'subjects/' + patient + '/dMRI/tractography/' + patient + '_tractogram.trk'
+    dwi_path = root + 'subjects/' + patient + \
+        '/dMRI/preproc/' + patient + '_dmri_preproc.nii.gz'
+    streamlines_path = root + 'subjects/' + patient + \
+        '/dMRI/tractography/' + patient + '_tractogram.trk'
     matrix_path = root + 'subjects/' + patient + '/dMRI/tractography/' + patient
 
     subjects_list = root + 'subjects/subj_list.json'
@@ -211,3 +251,4 @@ if __name__ == '__main__':
     output_path = path_to_analysis_code + 'output_analysis/'
 
     new_label_map = connectivity_matrices(dwi_path, labels_path, streamlines_path, matrix_path, freeSurfer_labels)
+
