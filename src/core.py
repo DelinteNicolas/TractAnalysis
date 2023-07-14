@@ -96,7 +96,7 @@ def connectivity_matrices(dwi_path: str, labels_path: str, streamlines_path: str
 
     return new_label_map
 
-def significance_level(list_subject: str, root: str, output_path: str):
+def significance_level(list_subject: list, root: str, output_path: str):
 
     with open(list_subject, 'r') as read_file:
         list_subject = json.load(read_file)
@@ -132,17 +132,26 @@ def significance_level(list_subject: str, root: str, output_path: str):
     for i in range(list_E1.shape[0]):
         for j in range(list_E1.shape[1]):
             _, pval_12 = ttest_ind(list_E1[i, j, :], list_E2[i, j, :], alternative='two-sided')
+            if np.isnan(pval_12):
+                pval_12 = 1000
             pval_E12[i, j] = pval_12
 
             _, pval_13 = ttest_ind(list_E1[i, j, :], list_E3[i, j, :], alternative='two-sided')
+            if np.isnan(pval_13):
+                pval_13 = 1000
             pval_E13[i, j] = pval_13
 
             _, pval_23 = ttest_ind(list_E2[i, j, :], list_E3[i, j, :], alternative='two-sided')
+            if np.isnan(pval_23):
+                pval_23 = 1000
             pval_E23[i, j] = pval_23
 
     pval_all = []
-    pval_all = pval_all.append(pval_E12)
-    pval_all = pval_all.append(pval_E13)  # .append(pval_E23)
+
+    pval_all.append(pval_E12)
+    pval_all.append(pval_E13)
+    pval_all.append(pval_E23)
+
     pval_all = np.stack(pval_all, axis=2)
 
     np.save(output_path + '_pvals_E12_E13_E23.npy', pval_all)
@@ -180,7 +189,6 @@ def slurm_iter(root: str, patient_list: list = []):
 
 
 if __name__ == '__main__':
-
     patient = sys.argv[1]
     root = sys.argv[2]
 
