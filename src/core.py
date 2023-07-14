@@ -259,6 +259,7 @@ def extract_streamline(edge: tuple, dwi_path: str, labels_path: str,
     None.
 
     '''
+    print(edge, type(edge))
 
     labels = nib.load(labels_path).get_fdata()
 
