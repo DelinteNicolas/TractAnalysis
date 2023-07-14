@@ -140,7 +140,7 @@ def significance_level(list_subject: str, root: str, output_path: str):
             _, pval_23 = ttest_ind(list_E2[i, j, :], list_E3[i, j, :], alternative='two-sided')
             pval_E23[i, j] = pval_23
 
-    pval_all = pval_E12.append(pval_E13).append(pval_E23)
+    pval_all = np.append(np.append(pval_E12, pval_E13), pval_E23)
     pval_all = np.stack(pval_all, axis=2)
 
     np.save(output_path + '_pvals_E12_E13_E23.npy', pval_all)
