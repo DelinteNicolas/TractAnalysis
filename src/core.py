@@ -17,6 +17,25 @@ with warnings.catch_warnings():
 
 def register_atlas_to_subj(fa_path: str, atlas_path: str, mni_fa_path: str,
                            output_path: str):
+    '''
+    Two-step registration to obtain label in the diffusion space.
+
+    Parameters
+    ----------
+    fa_path : str
+        Path to FA file.
+    atlas_path : str
+        DESCRIPTION.
+    mni_fa_path : str
+        DESCRIPTION.
+    output_path : str
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    '''
 
     map_desikan_to_fa = find_transform(atlas_path, mni_fa_path,
                                        only_affine=True)
@@ -171,7 +190,10 @@ def significance_level(list_subject: list, root: str, output_path: str):
 
 
 def to_float64(val):
-    """Used if *val* is an instance of numpy.float32."""
+    """
+    Used if *val* is an instance of numpy.float32.
+    """
+
     return np.float64(val)
 
 
@@ -216,7 +238,27 @@ def get_edges_of_interest(pval_file: str, output_path: str) -> list:
 
 
 def extract_streamline(edge: tuple, dwi_path: str, labels_path: str,
-                       streamlines_path: str, output_dir: str):
+                       streamlines_path: str):
+    '''
+    Creates a new file with the streamlines connecting both regions specified in
+    the tuple 'edge'.
+
+    Parameters
+    ----------
+    edge : tuple
+        Index of the regions of interest. Ex: (1,23)
+    dwi_path : str
+        Path to diffusion data.
+    labels_path : str
+        Path to volume containing the indexes.
+    streamlines_path : str
+        Path to tractogram.
+
+    Returns
+    -------
+    None.
+
+    '''
 
     labels = nib.load(labels_path).get_fdata()
 
@@ -242,12 +284,14 @@ def extract_streamline(edge: tuple, dwi_path: str, labels_path: str,
 
 def slurm_iter(root: str, code: str, patient_list: list = []):
     '''
-
+    Launches the scripts.py pyhton file for all patients in patient_list
 
     Parameters
     ----------
     root : str
         Path to study
+    code : str
+        Part of the script to launch. Either 'connectivity' or 'extraction'.
     patient_list : list, optional
         If not specified, runs on all patients in the study. The default is [].
 

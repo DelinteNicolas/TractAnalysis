@@ -2,13 +2,16 @@ import sys
 from core import (register_atlas_to_subj, connectivity_matrices,
                   extract_streamline, get_edges_of_interest)
 
+# Arguments
+
 patient = sys.argv[1]
 root = sys.argv[2]
 code = sys.argv[3]
 
+# Pathways
+
 path_to_analysis_code = root.replace(
     root.split('/')[-2] + '/', '') + 'TractAnalysis/'
-
 fa_path = (root + 'subjects/' + patient + '/dMRI/microstructure/dti/' + patient
            + '_FA.nii.gz')
 atlas_path = path_to_analysis_code + 'data/atlas_desikan_killiany.nii.gz'
@@ -23,6 +26,8 @@ matrix_path = root + 'subjects/' + patient + '/dMRI/tractography/' + patient
 subjects_list = root + 'subjects/subj_list.json'
 freeSurfer_labels = path_to_analysis_code + 'data/FreeSurfer_labels.xlsx'
 output_path = path_to_analysis_code + 'output_analysis/'
+
+# Scripts and functions
 
 if code == 'connectivity':
 
