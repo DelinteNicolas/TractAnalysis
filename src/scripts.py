@@ -1,4 +1,5 @@
 import sys
+import json
 from core import (register_atlas_to_subj, connectivity_matrices,
                   extract_streamline, get_edges_of_interest)
 
@@ -39,7 +40,7 @@ if code == 'connectivity':
 elif code == 'extraction':
 
     with open(output_path+'selected_edges.json') as file:
-        edges = file.read()
+        edges = json.loads()
 
     extract_streamline(edges[0], dwi_path, labels_path, streamlines_path)
 

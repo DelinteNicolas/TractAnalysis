@@ -231,7 +231,7 @@ def get_edges_of_interest(pval_file: str, output_path: str) -> list:
 
     # Temporary candidate
     mi = np.unravel_index(np.argmin(m), m.shape)
-    edge = mi[:2]
+    edge = tuple(mi[:2])
 
     json.dump([edge], open(output_path+'selected_edges.json', 'w'),
               default=to_float64)
