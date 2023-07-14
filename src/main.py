@@ -1,4 +1,4 @@
-from utils import print_views_from_study_folder
+from utils import print_views_from_study_folder, get_label_list
 from core import slurm_iter, significance_level, get_edges_of_interest
 
 
