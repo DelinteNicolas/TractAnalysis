@@ -51,7 +51,31 @@ def register_atlas_to_subj(fa_path: str, atlas_path: str, mni_fa_path: str,
                     output_path=output_path, labels=True)
 
 
-def connectivity_matrices(dwi_path: str, labels_path: str, streamlines_path: str, output_path: str, freeSurfer_labels: str):
+def connectivity_matrices(dwi_path: str, labels_path: str, streamlines_path: str, output_path: str, freeSurfer_labels: str, subjects_list: str):
+    '''
+    Creation of the connectivity matrix for each patient at each acquisition time.
+
+    Parameters
+    ----------
+    dwi_path : str
+        DESCRIPTION.
+    labels_path : str
+        DESCRIPTION.
+    streamlines_path : str
+        DESCRIPTION.
+    output_path : str
+        DESCRIPTION.
+    freeSurfer_labels : str
+        DESCRIPTION.
+    subjects_list : str
+        DESCRIPTION.
+
+    Returns
+    -------
+    new_label_map : TYPE
+        DESCRIPTION.
+
+    '''
 
     labels = nib.load(labels_path).get_fdata()
 
@@ -90,16 +114,16 @@ def connectivity_matrices(dwi_path: str, labels_path: str, streamlines_path: str
         np.append(right_labels, middle_labels), left_labels)
     a = np.argwhere(labels_sorted == 0)
 
-    labels_sorted = np.delete(labels_sorted, 50)
+    labels_sorted = np.delete(labels_sorted, a)
     area_sorted = np.append(np.append(right_area, middle_area), left_area)
-    area_sorted = np.delete(area_sorted, 50)
+    area_sorted = np.delete(area_sorted, a)
 
     new_labels_value = np.linspace(
         0, len(labels_sorted) - 1, len(labels_sorted))
     new_label_map = np.zeros([len(labels), len(labels[0]), len(labels[0][0])])
     for i in range(len(labels_sorted)):
-        new_label_map += np.where(labels ==
-                                  labels_sorted[i], new_labels_value[i], 0)
+        new_label_map += np.where(labels
+                                  == labels_sorted[i], new_labels_value[i], 0)
     new_label_map = new_label_map.astype('int64')
 
     M, grouping = utils.connectivity_matrix(streams_data, affine,
@@ -116,16 +140,45 @@ def connectivity_matrices(dwi_path: str, labels_path: str, streamlines_path: str
     ax.set_yticks(np.arange(len(area_sorted)))
     ax.set_yticklabels(area_sorted)
 
-    plt.savefig(output_path + '_connectivity_matrix.png')
+    trac_im = streamlines_path.replace('_tractogram.trk', '_connectivity_matrix.png')
+
+    plt.savefig(trac_im)
     plt.title('Connectivity matrix')
     plt.xlabel("Labels")
 
-    np.save(output_path + '_connectivity_matrix.npy', M)
+    with open(subjects_list, 'r') as read_file:
+        subjects_list = json.load(read_file)
+
+    if str(subjects_list[0]) in labels_path:
+
+        with open(output_path + 'labels_connectivity_matrix.txt', 'w') as f:
+            for line in area_sorted:
+                f.write(str(line) + '\n')
+
+    trac_save = streamlines_path.replace('_tractogram.trk', '_connectivity_matrix.npy')
+    np.save(trac_save, M)
 
     return new_label_map
 
 
 def significance_level(list_subject: list, root: str, output_path: str):
+    '''
+
+
+    Parameters
+    ----------
+    list_subject : list
+        DESCRIPTION.
+    root : str
+        DESCRIPTION.
+    output_path : str
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    '''
 
     with open(list_subject, 'r') as read_file:
         list_subject = json.load(read_file)
@@ -224,8 +277,8 @@ def get_edges_of_interest(pval_file: str, output_path: str) -> list:
     m = np.transpose(m, (1, 2, 0))
 
     # Multiple comparison pval correction
-    comparisons = (m.shape[0]*m.shape[1])/2-m.shape[0]/2
-    pval = 0.05/comparisons
+    comparisons = (m.shape[0] * m.shape[1]) / 2 - m.shape[0] / 2
+    pval = 0.05 / comparisons
 
     l = np.argwhere(m < pval)
     # To be continued ...
@@ -234,7 +287,7 @@ def get_edges_of_interest(pval_file: str, output_path: str) -> list:
     mi = np.unravel_index(np.argmin(m), m.shape)
     edge = tuple(mi[:2])
 
-    json.dump([edge], open(output_path+'selected_edges.json', 'w'),
+    json.dump([edge], open(output_path + 'selected_edges.json', 'w'),
               default=to_float64)
 
 
@@ -279,9 +332,9 @@ def extract_streamline(edge: tuple, dwi_path: str, labels_path: str,
 
     tract = StatefulTractogram(streamlines, img, Space.RASMM)
 
-    filename = streamlines_path[:-4]+'_'+str(edge[0])+'_'+str(edge[1])
+    filename = streamlines_path[:-4] + '_' + str(edge[0]) + '_' + str(edge[1])
 
-    save_trk(tract, filename+'.trk')
+    save_trk(tract, filename + '.trk')
 
 
 def slurm_iter(root: str, code: str, patient_list: list = []):
