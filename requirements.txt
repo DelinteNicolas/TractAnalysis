@@ -1,5 +1,6 @@
 json
 nibabel
 numpy
+openpyxl
 pandas
 pilab-regis
