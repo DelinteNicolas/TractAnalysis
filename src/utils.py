@@ -146,4 +146,4 @@ def get_mean_connectivity(list_subjects: list, root: str, output_path: str):
     plt.savefig(output_path + 'mean_connectivity_matrix.png')
 
     np.save(output_path + 'mean_connectivity_matrix.npy', mean_connectivity)
-    np.save(output_path + 'mean_connectivity_matrix.npy', min_connectivity)
+    np.save(output_path + 'min_connectivity_matrix.npy', min_connectivity)
