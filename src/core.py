@@ -151,7 +151,7 @@ def connectivity_matrices(dwi_path: str, labels_path: str,
     with open(subjects_list, 'r') as read_file:
         subjects_list = json.load(read_file)
 
-    if str(subjects_list[0]) in labels_path:
+    if 'sub01_E1' in labels_path:
 
         with open(output_path + 'labels_connectivity_matrix.txt', 'w') as f:
             for line in area_sorted:
