@@ -134,8 +134,8 @@ def get_mean_connectivity(list_subjects: list, root: str, output_path: str):
 
     list_connectivity = np.stack(list_connectivity, axis=2)
 
-    mean_connectivity = np.mean(matrix, axis=2)
-    min_connectivity = np.min(matrix, axis=2)
+    mean_connectivity = np.mean(list_connectivity, axis=2)
+    min_connectivity = np.min(list_connectivity, axis=2)
 
     fig, ax = plt.subplots()
     ax.imshow(np.log1p(mean_connectivity * 100000), interpolation='nearest')
