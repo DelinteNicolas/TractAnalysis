@@ -20,10 +20,10 @@ if __name__ == '__main__':
     # print('Launching jobs to compute connectivity matrices')
     # slurm_iter(root, 'connectivity', patient_list=['sub01_E1'])
 
+    # Second section - Tract extraction #####################################
+    
     print('Computing p-values of connectivity matrices')
     significance_level(subjects_list, root, output_path)
-
-    # Second section - Tract extraction #####################################
     
     print('Get mean connectivity')
     get_mean_connectivity(subjects_list, root, output_path)
