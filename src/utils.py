@@ -102,7 +102,9 @@ def get_mean_connectivity(list_subjects: list, root: str, output_path: str):
 
     for i in range(len(list_subjects)):
 
-        path = root + 'subjects/' + str(list_subjects[i]) + '/dMRI/tractography/' + str(list_subjects[i]) + '_connectivity_matrix.npy'
+        path = (root + 'subjects/' + str(list_subjects[i]) 
+                + '/dMRI/tractography/' + str(list_subjects[i]) 
+                + '_connectivity_matrix.npy')
         try:
             matrix = np.load(path)
             list_connectivity.append(matrix)

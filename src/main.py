@@ -1,4 +1,4 @@
-from utils import print_views_from_study_folder
+from utils import print_views_from_study_folder, get_mean_connectivity
 from core import slurm_iter, significance_level, get_edges_of_interest
 
 
@@ -24,6 +24,9 @@ if __name__ == '__main__':
     # significance_level(subjects_list, root, output_path)
 
     # Second section - Tract extraction #####################################
+    
+    print('Get mean connectivity')
+    get_mean_connectivity(subjects_list, root, output_path)
 
     print('Finding most relevant connectivity edges')
     edge = get_edges_of_interest(pval_file, output_path=output_path)
