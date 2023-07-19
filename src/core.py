@@ -15,7 +15,7 @@ with warnings.catch_warnings():
 
 
 def register_atlas_to_subj(fa_path: str, atlas_path: str, mni_fa_path: str,
-                           output_path: str):
+                           output_path: str, static_mask_path: str):
     '''
     Two-step registration to obtain label in the diffusion space.
 
@@ -38,7 +38,11 @@ def register_atlas_to_subj(fa_path: str, atlas_path: str, mni_fa_path: str,
 
     map_desikan_to_fa = find_transform(atlas_path, mni_fa_path,
                                        only_affine=True)
-    map_mni_to_subj = find_transform(mni_fa_path, fa_path)
+
+    static_mask = nib.load(static_mask_path).get_fdata()
+
+    map_mni_to_subj = find_transform(mni_fa_path, fa_path,
+                                     static_mask=static_mask)
 
     inter_path = output_path[:-7] + '_inter.nii.gz'
 
