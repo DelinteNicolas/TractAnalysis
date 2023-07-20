@@ -258,7 +258,8 @@ def to_float64(val):
     return np.float64(val)
 
 
-def get_edges_of_interest(pval_file: str, output_path: str) -> list:
+def get_edges_of_interest(pval_file: str, output_path: str,
+                          min_path: str) -> list:
     '''
     Returns the edges corresponding to low p-values
 
@@ -266,6 +267,10 @@ def get_edges_of_interest(pval_file: str, output_path: str) -> list:
     ----------
     pval_file : str
         Path to .npy containing p-values of connectivity matrices
+    output_path :str
+        ...
+    min_path :str
+        Path to arrays with the minimum number of connections.
 
     Returns
     -------
@@ -283,8 +288,13 @@ def get_edges_of_interest(pval_file: str, output_path: str) -> list:
     m[m == 0] = 1
     m = np.transpose(m, (1, 2, 0))
 
+    # Removing regions where there are no connections once
+    mins = np.load(min_path)
+    m[mins == 0] = 1
+    comparisons = np.count_nonzero(mins)/2
+
     # Multiple comparison pval correction
-    comparisons = (m.shape[0] * m.shape[1]) / 2 - m.shape[0] / 2
+    # comparisons = (m.shape[0] * m.shape[1]) / 2 - m.shape[0] / 2
     pval = 0.05 / comparisons
 
     l = np.argwhere(m < pval)
