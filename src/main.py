@@ -11,6 +11,7 @@ if __name__ == '__main__':
     subjects_list = root + 'subjects/subj_list.json'
     output_path = path_to_analysis_code + 'output_analysis/'
     pval_file = path_to_analysis_code + 'output_analysis/_pvals_E12_E13_E23.npy'
+    min_path = path_to_analysis_code + 'output_analys/min_connectivity_matrix.npy'
 
     # First section - Connectivity ##########################################
 
@@ -29,7 +30,8 @@ if __name__ == '__main__':
     get_mean_connectivity(subjects_list, root, output_path)
 
     print('Finding most relevant connectivity edges')
-    edge = get_edges_of_interest(pval_file, output_path=output_path)
+    edge = get_edges_of_interest(pval_file, output_path=output_path,
+                                 min_path=min_path)
 
     print('Launching jobs to extract tract of interest')
     slurm_iter(root, 'extraction', patient_list=['sub01_E1'])
