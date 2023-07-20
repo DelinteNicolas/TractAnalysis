@@ -1,4 +1,4 @@
-from utils import print_views_from_study_folder
+from utils import print_views_from_study_folder, get_mean_connectivity
 from core import slurm_iter, significance_level, get_edges_of_interest
 
 
@@ -17,16 +17,19 @@ if __name__ == '__main__':
     # print('Checking view orientations for all patients')
     # print_views_from_study_folder(root)
 
-    # print('Launching jobs to compute connectivity matrices')
-    # slurm_iter(root, 'connectivity', patient_list=['sub01_E1'])
+    print('Launching jobs to compute connectivity matrices')
+    slurm_iter(root, 'connectivity', patient_list=['sub01_E1'])
+
+    # Second section - Tract extraction #####################################
 
     # print('Computing p-values of connectivity matrices')
     # significance_level(subjects_list, root, output_path)
 
-    # Second section - Tract extraction #####################################
+    # print('Get mean connectivity')
+    # get_mean_connectivity(subjects_list, root, output_path)
 
-    print('Finding most relevant connectivity edges')
-    edge = get_edges_of_interest(pval_file, output_path=output_path)
+    # print('Finding most relevant connectivity edges')
+    # edge = get_edges_of_interest(pval_file, output_path=output_path)
 
-    print('Launching jobs to extract tract of interest')
-    slurm_iter(root, 'extraction', patient_list=['sub01_E1'])
+    # print('Launching jobs to extract tract of interest')
+    # slurm_iter(root, 'extraction', patient_list=['sub01_E1'])

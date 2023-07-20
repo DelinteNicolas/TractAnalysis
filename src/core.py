@@ -1,5 +1,4 @@
 import os
-import sys
 import json
 import warnings
 import numpy as np
@@ -13,11 +12,10 @@ with warnings.catch_warnings():
     from dipy.io.streamline import load_tractogram, save_trk
     from dipy.io.stateful_tractogram import Space, StatefulTractogram
     from dipy.tracking import utils
-    from dipy.tracking.streamline import Streamlines
 
 
 def register_atlas_to_subj(fa_path: str, atlas_path: str, mni_fa_path: str,
-                           output_path: str):
+                           output_path: str, static_mask_path: str):
     '''
     Two-step registration to obtain label in the diffusion space.
 
@@ -40,7 +38,11 @@ def register_atlas_to_subj(fa_path: str, atlas_path: str, mni_fa_path: str,
 
     map_desikan_to_fa = find_transform(atlas_path, mni_fa_path,
                                        only_affine=True)
-    map_mni_to_subj = find_transform(mni_fa_path, fa_path)
+
+    static_mask = nib.load(static_mask_path).get_fdata()
+
+    map_mni_to_subj = find_transform(mni_fa_path, fa_path,
+                                     static_mask=static_mask)
 
     inter_path = output_path[:-7] + '_inter.nii.gz'
 
@@ -51,9 +53,12 @@ def register_atlas_to_subj(fa_path: str, atlas_path: str, mni_fa_path: str,
                     output_path=output_path, labels=True)
 
 
-def connectivity_matrices(dwi_path: str, labels_path: str, streamlines_path: str, output_path: str, freeSurfer_labels: str, subjects_list: str):
+def connectivity_matrices(dwi_path: str, labels_path: str,
+                          streamlines_path: str, output_path: str,
+                          freeSurfer_labels: str, subjects_list: str):
     '''
-    Creation of the connectivity matrix for each patient at each acquisition time.
+    Creation of the connectivity matrix for each patient at each acquisition
+    time.
 
     Parameters
     ----------
@@ -140,7 +145,8 @@ def connectivity_matrices(dwi_path: str, labels_path: str, streamlines_path: str
     ax.set_yticks(np.arange(len(area_sorted)))
     ax.set_yticklabels(area_sorted)
 
-    trac_im = streamlines_path.replace('_tractogram.trk', '_connectivity_matrix.png')
+    trac = streamlines_path.replace('_tractogram', '_connectivity_matrix')
+    trac_im = trac.replace('.trk', '.png')
 
     plt.savefig(trac_im)
     plt.title('Connectivity matrix')
@@ -149,13 +155,13 @@ def connectivity_matrices(dwi_path: str, labels_path: str, streamlines_path: str
     with open(subjects_list, 'r') as read_file:
         subjects_list = json.load(read_file)
 
-    if str(subjects_list[0]) in labels_path:
+    if 'sub01_E1' in labels_path:
 
         with open(output_path + 'labels_connectivity_matrix.txt', 'w') as f:
             for line in area_sorted:
                 f.write(str(line) + '\n')
 
-    trac_save = streamlines_path.replace('_tractogram.trk', '_connectivity_matrix.npy')
+    trac_save = trac.replace('.trk', '.npy')
     np.save(trac_save, M)
 
     return new_label_map
@@ -189,8 +195,9 @@ def significance_level(list_subject: list, root: str, output_path: str):
 
     for i in range(len(list_subject)):
 
-        path = root + 'subjects/' + str(list_subject[i]) + '/dMRI/tractography/' + str(
-            list_subject[i]) + '_connectivity_matrix.npy'
+        path = (root + 'subjects/' + str(list_subject[i])
+                + '/dMRI/tractography/' + str(list_subject[i])
+                + '_connectivity_matrix.npy')
         try:
             matrix = np.load(path)
         except FileNotFoundError:
@@ -207,7 +214,7 @@ def significance_level(list_subject: list, root: str, output_path: str):
     list_E2 = np.stack(list_E2, axis=2)
     list_E3 = np.stack(list_E3, axis=2)
 
-    # On part du principe que les entrées des matrices sont les mêmes mais à vérif
+    # On part du principe que les entrées des matrices sont les mêmes, à vérifer
     pval_E12 = np.zeros((list_E1.shape[0], list_E1.shape[1]))
     pval_E13 = np.zeros((list_E1.shape[0], list_E1.shape[1]))
     pval_E23 = np.zeros((list_E1.shape[0], list_E1.shape[1]))

@@ -11,8 +11,8 @@ code = sys.argv[3]
 
 # Pathways
 
-path_to_analysis_code = root.replace(
-    root.split('/')[-2] + '/', '') + 'TractAnalysis/'
+path_to_analysis_code = (root.replace(root.split('/')[-2] + '/', '')
+                         + 'TractAnalysis/')
 fa_path = (root + 'subjects/' + patient + '/dMRI/microstructure/dti/' + patient
            + '_FA.nii.gz')
 atlas_path = path_to_analysis_code + 'data/atlas_desikan_killiany.nii.gz'
@@ -21,8 +21,12 @@ labels_path = (root + 'subjects/' + patient + '/masks/' + patient
                + '_labels.nii.gz')
 dwi_path = (root + 'subjects/' + patient + '/dMRI/preproc/' + patient
             + '_dmri_preproc.nii.gz')
+static_mask_path = (root + 'subjects/' + patient + '/masks/' + patient
+                    + '_brain_mask.nii.gz')
+# streamlines_path = (root + 'subjects/' + patient + '/dMRI/tractography/'
+#                     + patient + '_tractogram.trk')
 streamlines_path = (root + 'subjects/' + patient + '/dMRI/tractography/'
-                    + patient + '_tractogram.trk')
+                    + patient + '_tractogram_sift.trk')
 subjects_list = root + 'subjects/subj_list.json'
 freeSurfer_labels = path_to_analysis_code + 'data/FreeSurfer_labels.xlsx'
 output_path = path_to_analysis_code + 'output_analysis/'
@@ -31,10 +35,12 @@ output_path = path_to_analysis_code + 'output_analysis/'
 
 if code == 'connectivity':
 
-    register_atlas_to_subj(fa_path, atlas_path, mni_fa_path, labels_path)
+    register_atlas_to_subj(fa_path, atlas_path, mni_fa_path, labels_path,
+                           static_mask_path=static_mask_path)
 
-    new_label_map = connectivity_matrices(
-        dwi_path, labels_path, streamlines_path, output_path, freeSurfer_labels, subjects_list)
+    new_label_map = connectivity_matrices(dwi_path, labels_path,
+                                          streamlines_path, output_path,
+                                          freeSurfer_labels, subjects_list)
 
 elif code == 'extraction':
 

@@ -91,18 +91,41 @@ def get_acquisition_view(affine) -> str:
 
 
 def get_mean_connectivity(list_subjects: list, root: str, output_path: str):
+    '''
+
+
+    Parameters
+    ----------
+    list_subjects : list
+        DESCRIPTION.
+    root : str
+        DESCRIPTION.
+    output_path : str
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    '''
 
     with open(list_subjects, 'r') as read_file:
         list_subjects = json.load(read_file)
 
-    with open(output_path + 'labels_connectivity_matrix.txt', 'r') as f:
-        area_sorted = [line.rstrip('\n') for line in f]
+    if os.path.isfile(output_path + 'labels_connectivity_matrix.txt'):
+        labels_found = True
+        with open(output_path + 'labels_connectivity_matrix.txt', 'r') as f:
+            area_sorted = [line.rstrip('\n') for line in f]
+    else:
+        labels_found = False
 
     list_connectivity = []
 
     for i in range(len(list_subjects)):
 
-        path = root + 'subjects/' + str(list_subjects[i]) + '/dMRI/tractography/' + str(list_subjects[i]) + '_connectivity_matrix.npy'
+        path = (root + 'subjects/' + str(list_subjects[i])
+                + '/dMRI/tractography/' + str(list_subjects[i])
+                + '_connectivity_matrix.npy')
         try:
             matrix = np.load(path)
             list_connectivity.append(matrix)
@@ -111,15 +134,16 @@ def get_mean_connectivity(list_subjects: list, root: str, output_path: str):
 
     list_connectivity = np.stack(list_connectivity, axis=2)
 
-    mean_connectivity = np.matrix.mean(2)
-    min_connectivity = np.matrix.min(2)
+    mean_connectivity = np.mean(list_connectivity, axis=2)
+    min_connectivity = np.min(list_connectivity, axis=2)
 
     fig, ax = plt.subplots()
     ax.imshow(np.log1p(mean_connectivity * 100000), interpolation='nearest')
-    ax.set_yticks(np.arange(len(area_sorted)))
-    ax.set_yticklabels(area_sorted)
+    if labels_found:
+        ax.set_yticks(np.arange(len(area_sorted)))
+        ax.set_yticklabels(area_sorted)
 
     plt.savefig(output_path + 'mean_connectivity_matrix.png')
 
     np.save(output_path + 'mean_connectivity_matrix.npy', mean_connectivity)
-    np.save(output_path + 'mean_connectivity_matrix.npy', min_connectivity)
+    np.save(output_path + 'min_connectivity_matrix.npy', min_connectivity)
