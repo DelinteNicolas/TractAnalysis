@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/CECI/proj/pilab/PermeableAccess/alcooliques_As2Z4vF8GNv/TractAnalysis/src/scripts.py", line 42, in <module>
+    new_label_map = connectivity_matrices(dwi_path, labels_path,
+  File "/CECI/proj/pilab/PermeableAccess/alcooliques_As2Z4vF8GNv/TractAnalysis/src/core.py", line 146, in connectivity_matrices
+    print(max(i), max(j), max(k))
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()

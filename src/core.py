@@ -55,7 +55,7 @@ def register_atlas_to_subj(fa_path: str, atlas_path: str, mni_fa_path: str,
 
 def connectivity_matrices(dwi_path: str, labels_path: str,
                           streamlines_path: str, output_path: str,
-                          freeSurfer_labels: str, subjects_list: str):
+                          freeSurfer_labels: str):
     '''
     Creation of the connectivity matrix for each patient at each acquisition
     time.
@@ -131,10 +131,10 @@ def connectivity_matrices(dwi_path: str, labels_path: str,
                                   == labels_sorted[i], new_labels_value[i], 0)
     new_label_map = new_label_map.astype('int64')
 
-    M, grouping = utils.connectivity_matrix(streams_data, affine,
-                                            new_label_map,
-                                            return_mapping=True,
-                                            mapping_as_streamlines=True)
+    M, _ = utils.connectivity_matrix(streams_data, affine,
+                                     new_label_map,
+                                     return_mapping=True,
+                                     mapping_as_streamlines=True)
 
     np.fill_diagonal(M, 0)
     M = M.astype('float32')
@@ -152,14 +152,12 @@ def connectivity_matrices(dwi_path: str, labels_path: str,
     plt.title('Connectivity matrix')
     plt.xlabel("Labels")
 
-    with open(subjects_list, 'r') as read_file:
-        subjects_list = json.load(read_file)
+    labels_path = streamlines_path.replace('_tractogram', '_labels_connectivity_matrix')
+    labels_path = labels_path.replace('.trk', '.txt')
 
-    if 'sub01_E1' in labels_path:
-
-        with open(output_path + 'labels_connectivity_matrix.txt', 'w') as f:
-            for line in area_sorted:
-                f.write(str(line) + '\n')
+    with open(labels_path, 'w') as f:
+        for line in area_sorted:
+            f.write(str(line) + '\n')
 
     trac_save = trac.replace('.trk', '.npy')
     np.save(trac_save, M)
@@ -291,7 +289,7 @@ def get_edges_of_interest(pval_file: str, output_path: str,
     # Removing regions where there are no connections once
     mins = np.load(min_path)
     m[mins == 0] = 1
-    comparisons = np.count_nonzero(mins)/2
+    comparisons = np.count_nonzero(mins) / 2
 
     # Multiple comparison pval correction
     # comparisons = (m.shape[0] * m.shape[1]) / 2 - m.shape[0] / 2

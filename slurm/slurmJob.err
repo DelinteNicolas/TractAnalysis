@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/CECI/proj/pilab/PermeableAccess/alcooliques_As2Z4vF8GNv/TractAnalysis/src/scripts.py", line 42, in <module>
+    new_label_map = connectivity_matrices(dwi_path, labels_path,
+  File "/CECI/proj/pilab/PermeableAccess/alcooliques_As2Z4vF8GNv/TractAnalysis/src/core.py", line 143, in connectivity_matrices
+    endlabels = new_label_map[i, j, k]
+IndexError: index 68 is out of bounds for axis 2 with size 68

@@ -23,32 +23,33 @@ dwi_path = (root + 'subjects/' + patient + '/dMRI/preproc/' + patient
             + '_dmri_preproc.nii.gz')
 static_mask_path = (root + 'subjects/' + patient + '/masks/' + patient
                     + '_brain_mask.nii.gz')
-# streamlines_path = (root + 'subjects/' + patient + '/dMRI/tractography/'
-#                     + patient + '_tractogram.trk')
 streamlines_path = (root + 'subjects/' + patient + '/dMRI/tractography/'
-                    + patient + '_tractogram_sift.trk')
+                    + patient + '_tractogram.trk')
+# streamlines_path = (root + 'subjects/' + patient + '/dMRI/tractography/'
+#                     + patient + '_tractogram_sift.trk')
 subjects_list = root + 'subjects/subj_list.json'
 freeSurfer_labels = path_to_analysis_code + 'data/FreeSurfer_labels.xlsx'
 output_path = path_to_analysis_code + 'output_analysis/'
+
 
 # Scripts and functions
 
 if code == 'connectivity':
 
-    register_atlas_to_subj(fa_path, atlas_path, mni_fa_path, labels_path,
-                           static_mask_path=static_mask_path)
+    # register_atlas_to_subj(fa_path, atlas_path, mni_fa_path, labels_path,
+    #                         static_mask_path=static_mask_path)
 
     new_label_map = connectivity_matrices(dwi_path, labels_path,
                                           streamlines_path, output_path,
-                                          freeSurfer_labels, subjects_list)
+                                          freeSurfer_labels)
 
-elif code == 'extraction':
+# elif code == 'extraction':
 
-    with open(output_path + 'selected_edges.json', "r") as file:
-        edges = json.load(file)
+#     with open(output_path + 'selected_edges.json', "r") as file:
+#         edges = json.load(file)
 
-    extract_streamline(edges[0], dwi_path, labels_path, streamlines_path)
+#     extract_streamline(edges[0], dwi_path, labels_path, streamlines_path)
 
-else:
+# else:
 
-    print('Invalid code name')
+#     print('Invalid code name')
