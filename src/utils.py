@@ -156,22 +156,25 @@ def get_mean_connectivity(list_subjects: str, root: str, output_path: str):
 def check_labels(list_subjects: str, root: str, output_path: str):
 
     general_list = []
-    check_failed=False
+    check_failed = False
 
     # with open(list_subjects, 'r') as read_file:
     #     list_subjects = json.load(read_file)
 
     for i in range(len(list_subjects)):
 
-        with open(root + "subjects/" + str(list_subjects[i]) + "/dMRI/tractography/" + str(list_subjects[i]) + "_labels_connectivity_matrix.txt") as file:
+        with open(root + "subjects/" + str(list_subjects[i])
+                  + "/dMRI/tractography/" + str(list_subjects[i])
+                  + "_labels_connectivity_matrix_sift.txt") as file:
             area_sorted = [line.rstrip('\n') for line in file]
 
-            for j in area_sorted:
-                if j not in general_list:
-                    general_list.append(j)
-                    if i>0 :
-                        check_failed=True
-                        
+            if len(general_list) == 0:
+                general_list = area_sorted
+            else:
+                if not general_list == area_sorted:
+                    print(list_subjects[i], ' failed')
+                    check_failed = True
+
     if check_failed:
         print('The labels list is not always the same accross patients')
     else:
@@ -197,7 +200,8 @@ def metrics_analysis(list_subjects: list, root: str, output_path: str, metric_na
 
             worksheet.write('A' + str(2 + j), str(list_subjects[j]))
 
-            ROI = tract_to_ROI(root + '/subjects/' + list_subjects[j] + '/dMRI/tractography/' + list_subjects[j] + '_' + edge_name[i] + '.trk')
+            ROI = tract_to_ROI(
+                root + '/subjects/' + list_subjects[j] + '/dMRI/tractography/' + list_subjects[j] + '_' + edge_name[i] + '.trk')
 
             for k in range(len(metric_name)):
 
@@ -212,7 +216,8 @@ def metrics_analysis(list_subjects: list, root: str, output_path: str, metric_na
                 else:
                     model = 'mf'
 
-                metric_map = nib.load(root + '/subjects/' + list_subjects[j] + '/dMRI/microstructure/' + model + '/' + list_subjects[j] + '_' + metric_name[k] + '.nii.gz').get_fdata()
+                metric_map = nib.load(root + '/subjects/' + list_subjects[j] + '/dMRI/microstructure/' +
+                                      model + '/' + list_subjects[j] + '_' + metric_name[k] + '.nii.gz').get_fdata()
 
                 metric_in_ROI = metric_map[ROI != 0]
 
@@ -241,7 +246,8 @@ def mean_metrics_analysis(list_subjects: list, root: str, output_path: str, metr
 
             for k in range(len(list_subjects)):
 
-                ROI = tract_to_ROI(root + '/subjects/' + list_subjects[k] + '/dMRI/tractography/' + list_subjects[k] + '_' + edge_name[i] + '.trk')
+                ROI = tract_to_ROI(
+                    root + '/subjects/' + list_subjects[k] + '/dMRI/tractography/' + list_subjects[k] + '_' + edge_name[i] + '.trk')
 
                 if metric_name[j] == 'FA' or metric_name[j] == 'MD' or metric_name[j] == 'RD' or metric_name[j] == 'AD':
                     model = 'dti'
@@ -252,7 +258,8 @@ def mean_metrics_analysis(list_subjects: list, root: str, output_path: str, metr
                 else:
                     model = 'mf'
 
-                metric_map = nib.load(root + '/subjects/' + list_subjects[k] + '/dMRI/microstructure/' + model + '/' + list_subjects[k] + '_' + metric_name[j] + '.nii.gz').get_fdata()
+                metric_map = nib.load(root + '/subjects/' + list_subjects[k] + '/dMRI/microstructure/' +
+                                      model + '/' + list_subjects[k] + '_' + metric_name[j] + '.nii.gz').get_fdata()
 
                 metric_in_ROI = metric_map[ROI != 0]
 
