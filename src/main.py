@@ -33,11 +33,11 @@ if __name__ == '__main__':
 
     print('Verification of labels')
     unwanted = ['sub13_E1', 'sub56_E1', 'sub304_E1']
-    p_list = [p for p in subjects_list if p not in unwanted]
+    p_list = [p for p in list_subjects if p not in unwanted]
     check_labels(p_list, root, output_path)
 
     print('Computing p-values of connectivity matrices')
-    significance_level(list_subjects, root, output_path)
+    significance_level(subjects_list, root, output_path)
 
     print('Get mean connectivity')
     get_mean_connectivity(subjects_list, root, output_path)
