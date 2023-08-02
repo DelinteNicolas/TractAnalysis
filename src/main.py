@@ -22,30 +22,30 @@ if __name__ == '__main__':
 # First section - Connectivity
 # =============================================================================
 
-    # print('Checking view orientations for all patients')
-    # print_views_from_study_folder(root)
+    print('Checking view orientations for all patients')
+    print_views_from_study_folder(root)
 
-    # print('Launching jobs to compute connectivity matrices')
-    # slurm_iter(root, 'connectivity', patient_list=['sub01_E1', 'sub01_E2'])
+    print('Launching jobs to compute connectivity matrices')
+    slurm_iter(root, 'connectivity')
 
 # =============================================================================
 # Second section - Tract extraction
 # =============================================================================
 
-    print('Verification of labels')
-    unwanted = ['sub13_E1', 'sub56_E1', 'sub304_E1']
-    p_list = [p for p in list_subjects if p not in unwanted]
-    check_labels(p_list, root, output_path)
+    # print('Verification of labels')
+    # unwanted = ['sub13_E1', 'sub56_E1', 'sub304_E1']
+    # p_list = [p for p in list_subjects if p not in unwanted]
+    # check_labels(p_list, root, output_path)
 
-    print('Computing p-values of connectivity matrices')
-    significance_level(subjects_list, root, output_path)
+    # print('Computing p-values of connectivity matrices')
+    # significance_level(subjects_list, root, output_path)
 
-    print('Get mean connectivity')
-    get_mean_connectivity(subjects_list, root, output_path)
+    # print('Get mean connectivity')
+    # get_mean_connectivity(subjects_list, root, output_path)
 
-    print('Finding most relevant connectivity edges')
-    edge = get_edges_of_interest(pval_file, output_path=output_path,
-                                 min_path=min_path)
+    # print('Finding most relevant connectivity edges')
+    # edge = get_edges_of_interest(pval_file, output_path=output_path,
+    #                              min_path=min_path)
 
-    print('Launching jobs to extract tract of interest')
-    slurm_iter(root, 'extraction', patient_list=['sub01_E1'])
+    # print('Launching jobs to extract tract of interest')
+    # slurm_iter(root, 'extraction', patient_list=['sub01_E1'])
