@@ -1,3 +1,4 @@
+import json
 from utils import print_views_from_study_folder, get_mean_connectivity, check_labels
 from core import slurm_iter, significance_level, get_edges_of_interest
 
@@ -13,15 +14,15 @@ if __name__ == '__main__':
     pval_file = path_to_analysis_code + 'output_analysis/_pvals_E12_E13_E23.npy'
     min_path = path_to_analysis_code + 'output_analys/min_connectivity_matrix.npy'
 
+    with open(subjects_list, 'r') as read_file:
+        list_subjects = json.load(read_file)
+
 # =============================================================================
 # First section - Connectivity
 # =============================================================================
 
     # print('Checking view orientations for all patients')
     # print_views_from_study_folder(root)
-
-    # with open(subjects_list, 'r') as read_file:
-    #    list_subjects = json.load(read_file)
 
     # print('Launching jobs to compute connectivity matrices')
     # slurm_iter(root, 'connectivity', patient_list=['sub01_E1', 'sub01_E2'])
@@ -36,7 +37,7 @@ if __name__ == '__main__':
     check_labels(p_list, root, output_path)
 
     print('Computing p-values of connectivity matrices')
-    significance_level(subjects_list, root, output_path)
+    significance_level(list_subjects, root, output_path)
 
     print('Get mean connectivity')
     get_mean_connectivity(subjects_list, root, output_path)
