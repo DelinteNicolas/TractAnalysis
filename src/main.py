@@ -40,7 +40,7 @@ if __name__ == '__main__':
     print('Computing p-values of connectivity matrices')
     significance_level(subjects_list, root, output_path)
 
-    print('Get mean connectivity')
+    print('Computing mean connectivity')
     get_mean_connectivity(subjects_list, root, output_path)
 
     print('Finding most relevant connectivity edges')

@@ -377,7 +377,14 @@ def extract_streamline(edge: tuple, dwi_path: str, labels_path: str,
 
     tract = StatefulTractogram(streamlines, img, Space.RASMM)
 
-    filename = streamlines_path[:-4] + '_' + str(edge[0]) + '_' + str(edge[1])
+    output_path = (streamlines_path.replace(streamlines_path.split('/')[-1], '')
+                   + 'tois/')
+
+    if not os.path.isdir(output_path):
+        os.mkdir(output_path)
+
+    filename = (output_path+streamlines_path.split('/')[-1][:-4] + '_'
+                + str(edge[0]) + '_' + str(edge[1]))
 
     save_trk(tract, filename + '.trk')
 
