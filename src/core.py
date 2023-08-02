@@ -351,7 +351,7 @@ def get_edges_of_interest(pval_file: str, output_path: str,
 
 
 def extract_streamline(edge: tuple, labels_path: str,
-                       streamlines_path: str):
+                       streamlines_path: str, excel_path: str):
     '''
     Creates a new file with the streamlines connecting both regions specified in
     the tuple 'edge'.
@@ -381,8 +381,12 @@ def extract_streamline(edge: tuple, labels_path: str,
     # trk.to_corner()
     streamlines = trk.streamlines
 
-    mask1 = np.where(labels == int(edge[0]), 1, 0)
-    mask2 = np.where(labels == int(edge[1]), 1, 0)
+    df = pd.read_excel(excel_path)
+
+    mask1 = np.where(
+        labels == df.loc[df['Index_new'] == edge[0]]['Index'].iloc[0], 1, 0)
+    mask2 = np.where(
+        labels == df.loc[df['Index_new'] == edge[1]]['Index'].iloc[0], 1, 0)
 
     streamlines = utils.target(streamlines, affine, mask1, include=True)
     streamlines = utils.target(streamlines, affine, mask2, include=True)

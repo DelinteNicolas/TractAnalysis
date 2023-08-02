@@ -31,6 +31,7 @@ streamlines_path = (root + 'subjects/' + patient + '/dMRI/tractography/'
                     + patient + '_tractogram_sift.trk')
 subjects_list = root + 'subjects/subj_list.json'
 freeSurfer_labels = path_to_analysis_code + 'data/FreeSurfer_labels.xlsx'
+excel_path = freeSurfer_labels.replace('.', '_bis.')
 
 # Scripts and functions
 
@@ -48,7 +49,7 @@ elif code == 'extraction':
     with open(output_path + 'selected_edges.json', "r") as file:
         edges = json.load(file)
 
-    extract_streamline(edges[0], labels_path, streamlines_path)
+    extract_streamline(edges[0], labels_path, streamlines_path, excel_path)
 
 else:
 
