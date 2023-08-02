@@ -48,7 +48,7 @@ elif code == 'extraction':
     with open(output_path + 'selected_edges.json', "r") as file:
         edges = json.load(file)
 
-    extract_streamline(edges[0], dwi_path, labels_path, streamlines_path)
+    extract_streamline(edges[0], labels_path, streamlines_path)
 
 else:
 

@@ -336,7 +336,7 @@ def get_edges_of_interest(pval_file: str, output_path: str,
               default=to_float64)
 
 
-def extract_streamline(edge: tuple, dwi_path: str, labels_path: str,
+def extract_streamline(edge: tuple, labels_path: str,
                        streamlines_path: str):
     '''
     Creates a new file with the streamlines connecting both regions specified in
@@ -346,8 +346,6 @@ def extract_streamline(edge: tuple, dwi_path: str, labels_path: str,
     ----------
     edge : tuple
         Index of the regions of interest. Ex: (1,23)
-    dwi_path : str
-        Path to diffusion data.
     labels_path : str
         Path to volume containing the indexes.
     streamlines_path : str
@@ -420,3 +418,13 @@ def slurm_iter(root: str, code: str, patient_list: list = []):
         os.system('sbatch -J ' + patient + ' '
                   + path_to_analysis_code + 'slurm/submitIter.sh '
                   + path_to_code + ' ' + patient + ' ' + root + ' ' + code)
+
+
+if __name__ == '__main__':
+
+    labels_path = 'C:/Users/nicol/Desktop/temp/sub01_E1_labels.nii.gz'
+    streamlines_path = 'C:/Users/nicol/Desktop/temp/sub01_E1_tractogram_sift.trk'
+    with open('C:/Users/nicol/Desktop/temp/selected_edges.json', "r") as file:
+        edges = json.load(file)
+
+    extract_streamline(edges[0], labels_path, streamlines_path)
