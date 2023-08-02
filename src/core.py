@@ -195,7 +195,7 @@ def significance_level(list_subject: list, root: str, output_path: str):
 
         path = (root + 'subjects/' + str(list_subject[i])
                 + '/dMRI/tractography/' + str(list_subject[i])
-                + '_connectivity_matrix.npy')
+                + '_connectivity_matrix_sift.npy')
         try:
             matrix = np.load(path)
         except FileNotFoundError:

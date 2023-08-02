@@ -23,10 +23,10 @@ dwi_path = (root + 'subjects/' + patient + '/dMRI/preproc/' + patient
             + '_dmri_preproc.nii.gz')
 static_mask_path = (root + 'subjects/' + patient + '/masks/' + patient
                     + '_brain_mask.nii.gz')
+#streamlines_path = (root + 'subjects/' + patient + '/dMRI/tractography/'
+#                    + patient + '_tractogram.trk')
 streamlines_path = (root + 'subjects/' + patient + '/dMRI/tractography/'
-                    + patient + '_tractogram.trk')
-# streamlines_path = (root + 'subjects/' + patient + '/dMRI/tractography/'
-#                     + patient + '_tractogram_sift.trk')
+                    + patient + '_tractogram_sift.trk')
 subjects_list = root + 'subjects/subj_list.json'
 freeSurfer_labels = path_to_analysis_code + 'data/FreeSurfer_labels.xlsx'
 output_path = path_to_analysis_code + 'output_analysis/'

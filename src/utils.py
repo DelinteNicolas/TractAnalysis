@@ -129,7 +129,7 @@ def get_mean_connectivity(list_subjects: str, root: str, output_path: str):
 
         path = (root + 'subjects/' + str(list_subjects[i])
                 + '/dMRI/tractography/' + str(list_subjects[i])
-                + '_connectivity_matrix.npy')
+                + '_connectivity_matrix_sift.npy')
         try:
             matrix = np.load(path)
             list_connectivity.append(matrix)
@@ -156,21 +156,26 @@ def get_mean_connectivity(list_subjects: str, root: str, output_path: str):
 def check_labels(list_subjects: str, root: str, output_path: str):
 
     general_list = []
+    check_failed=False
 
     # with open(list_subjects, 'r') as read_file:
     #     list_subjects = json.load(read_file)
 
     for i in range(len(list_subjects)):
 
-        print(list_subjects[i])
-
         with open(root + "subjects/" + str(list_subjects[i]) + "/dMRI/tractography/" + str(list_subjects[i]) + "_labels_connectivity_matrix.txt") as file:
             area_sorted = [line.rstrip('\n') for line in file]
 
             for j in area_sorted:
                 if j not in general_list:
-                    print(j)
                     general_list.append(j)
+                    if i>0 :
+                        check_failed=True
+                        
+    if check_failed:
+        print('The labels list is not always the same accross patients')
+    else:
+        print('Check successful')
 
     with open(output_path + '_labels_general_list.txt', 'w') as f:
         for line in general_list:
