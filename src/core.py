@@ -152,7 +152,8 @@ def connectivity_matrices(dwi_path: str, labels_path: str,
     plt.title('Connectivity matrix')
     plt.xlabel("Labels")
 
-    labels_path = streamlines_path.replace('_tractogram', '_labels_connectivity_matrix')
+    labels_path = streamlines_path.replace(
+        '_tractogram', '_labels_connectivity_matrix')
     labels_path = labels_path.replace('.trk', '.txt')
 
     with open(labels_path, 'w') as f:
@@ -210,6 +211,7 @@ def significance_level(list_subject: list, root: str, output_path: str):
 
     list_E1 = np.stack(list_E1, axis=2)
     list_E2 = np.stack(list_E2, axis=2)
+
     list_E3 = np.stack(list_E3, axis=2)
 
     # On part du principe que les entrées des matrices sont les mêmes, à vérifer
