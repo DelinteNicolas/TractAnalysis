@@ -53,6 +53,31 @@ def register_atlas_to_subj(fa_path: str, atlas_path: str, mni_fa_path: str,
                     output_path=output_path, labels=True)
 
 
+def check_wanted(unwanted_keyword_list: list, long_name: str) -> bool:
+    '''
+
+
+    Parameters
+    ----------
+    unwanted_keyword_list : list
+        DESCRIPTION.
+    long_name : str
+        DESCRIPTION.
+
+    Returns
+    -------
+    bool
+        DESCRIPTION.
+
+    '''
+
+    for key in unwanted_keyword_list:
+        if key in long_name:
+            return False
+
+    return True
+
+
 def connectivity_matrices(dwi_path: str, labels_path: str,
                           streamlines_path: str, output_path: str,
                           freeSurfer_labels: str):
@@ -102,9 +127,12 @@ def connectivity_matrices(dwi_path: str, labels_path: str,
     middle_labels = []
     middle_area = []
 
+    unwanted = ['vessel', 'CSF', 'Vent', 'unknown']
+
     for i in range(len(values)):
         for j in range(len(df['Index'])):
-            if (values[i] == df['Index'][j]):
+            wanted = check_wanted(unwanted, str(df['Area'][j]))
+            if (values[i] == df['Index'][j]) and wanted:
                 if 'right' in str(df['Area'][j]):
                     right_labels.append(values[i])
                     right_area.append(df['Area'][j])
