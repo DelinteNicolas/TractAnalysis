@@ -127,7 +127,7 @@ def connectivity_matrices(dwi_path: str, labels_path: str,
     middle_labels = []
     middle_area = []
 
-    unwanted = ['vessel', 'CSF', 'Vent', 'unknown']
+    unwanted = ['vessel', 'CSF', 'Vent', 'unknown', 'White_Matter']
 
     for i in range(len(values)):
         for j in range(len(df['Index'])):
@@ -308,28 +308,28 @@ def get_edges_of_interest(pval_file: str, output_path: str,
 
     '''
 
-    m = np.load(pval_file)
+    pval = np.load(pval_file)
 
     # Removing duplicates due to symmetry
-    m = np.transpose(m, (2, 0, 1))
-    m = np.tril(m, k=0)
-    m[m == 0] = 1
-    m = np.transpose(m, (1, 2, 0))
+    pval = np.transpose(pval, (2, 0, 1))
+    pval = np.tril(pval, k=0)
+    pval[pval == 0] = 1
+    pval = np.transpose(pval, (1, 2, 0))
 
     # Removing regions where there are no connections once
     mins = np.load(min_path)
-    m[mins == 0] = 1
+    pval[mins == 0] = 1
     comparisons = np.count_nonzero(mins) / 2
 
     # Multiple comparison pval correction
-    # comparisons = (m.shape[0] * m.shape[1]) / 2 - m.shape[0] / 2
-    pval = 0.05 / comparisons
+    # comparisons = (pval.shape[0] * pval.shape[1]) / 2 - pval.shape[0] / 2
+    pval_tresh = 0.05 / comparisons
 
-    l = np.argwhere(m < pval)
+    l = np.argwhere(pval < pval_tresh)
     # To be continued ...
 
     # Temporary candidate
-    mi = np.unravel_index(np.argmin(m), m.shape)
+    mi = np.unravel_index(np.argmin(pval), pval.shape)
     edge = tuple(mi[:2])
 
     json.dump([edge], open(output_path + 'selected_edges.json', 'w'),

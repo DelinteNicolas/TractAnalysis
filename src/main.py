@@ -13,7 +13,7 @@ if __name__ == '__main__':
     subjects_list = root + 'subjects/subj_list.json'
     output_path = path_to_analysis_code + 'output_analysis/'
     pval_file = path_to_analysis_code + 'output_analysis/_pvals_E12_E13_E23.npy'
-    min_path = path_to_analysis_code + 'output_analys/min_connectivity_matrix.npy'
+    min_path = path_to_analysis_code + 'output_analysis/min_connectivity_matrix.npy'
 
     with open(subjects_list, 'r') as read_file:
         list_subjects = json.load(read_file)
