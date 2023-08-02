@@ -14,7 +14,34 @@ with warnings.catch_warnings():
     from dipy.tracking import utils
 
 
-def register_atlas_to_subj(fa_path: str, atlas_path: str, mni_fa_path: str,
+def register_labels_to_atlas(labels_path: str, mni_fa_path: str,
+                             output_path: str):
+    '''
+
+
+    Parameters
+    ----------
+    labels_path : str
+        DESCRIPTION.
+    mni_fa_path : str
+        DESCRIPTION.
+    output_path : str
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    '''
+
+    map_desikan_to_fa = find_transform(labels_path, mni_fa_path,
+                                       only_affine=True)
+
+    apply_transform(labels_path, map_desikan_to_fa, static_file=mni_fa_path,
+                    output_path=output_path, labels=True)
+
+
+def register_atlas_to_subj(fa_path: str, label_path: str, mni_fa_path: str,
                            output_path: str, static_mask_path: str):
     '''
     Two-step registration to obtain label in the diffusion space.
@@ -36,20 +63,12 @@ def register_atlas_to_subj(fa_path: str, atlas_path: str, mni_fa_path: str,
 
     '''
 
-    map_desikan_to_fa = find_transform(atlas_path, mni_fa_path,
-                                       only_affine=True)
-
     static_mask = nib.load(static_mask_path).get_fdata()
 
     map_mni_to_subj = find_transform(mni_fa_path, fa_path,
-                                     static_mask=static_mask)
+                                     hard_static_mask=static_mask)
 
-    inter_path = output_path[:-7] + '_inter.nii.gz'
-
-    apply_transform(atlas_path, map_desikan_to_fa, static_file=mni_fa_path,
-                    output_path=inter_path, labels=True)
-
-    apply_transform(inter_path, map_mni_to_subj, static_file=fa_path,
+    apply_transform(label_path, map_mni_to_subj, static_file=fa_path,
                     output_path=output_path, labels=True)
 
 
@@ -169,7 +188,8 @@ def connectivity_matrices(dwi_path: str, labels_path: str,
     M = M / np.sum(M)
 
     fig, ax = plt.subplots()
-    ax.imshow(np.log1p(M * 100000), interpolation='nearest')
+    ax.imshow(np.log1p(M * len(trk.streamlines._offsets)),
+              interpolation='nearest')
     ax.set_yticks(np.arange(len(area_sorted)))
     ax.set_yticklabels(area_sorted)
 
@@ -194,13 +214,13 @@ def connectivity_matrices(dwi_path: str, labels_path: str,
     return new_label_map
 
 
-def significance_level(list_subject: list, root: str, output_path: str):
+def significance_level(list_subject: str, root: str, output_path: str):
     '''
 
 
     Parameters
     ----------
-    list_subject : list
+    list_subject : str
         DESCRIPTION.
     root : str
         DESCRIPTION.
@@ -220,26 +240,26 @@ def significance_level(list_subject: list, root: str, output_path: str):
     list_E2 = []
     list_E3 = []
 
-    for i in range(len(list_subject)):
+    for sub in list_subject:
 
-        path = (root + 'subjects/' + str(list_subject[i])
-                + '/dMRI/tractography/' + str(list_subject[i])
+        path = (root + 'subjects/' + str(sub)
+                + '/dMRI/tractography/' + str(sub)
                 + '_connectivity_matrix_sift.npy')
         try:
             matrix = np.load(path)
         except FileNotFoundError:
+            print('Connectivity matrix not found for '+str(sub))
             continue
 
-        if 'E1' in str(list_subject[i]):
+        if 'E1' in str(sub):
             list_E1.append(matrix)
-        elif 'E2' in str(list_subject[i]):
+        elif 'E2' in str(sub):
             list_E2.append(matrix)
-        else:
+        elif 'E3' in str(sub):
             list_E3.append(matrix)
 
     list_E1 = np.stack(list_E1, axis=2)
     list_E2 = np.stack(list_E2, axis=2)
-
     list_E3 = np.stack(list_E3, axis=2)
 
     # On part du principe que les entrées des matrices sont les mêmes, à vérifer
@@ -252,30 +272,24 @@ def significance_level(list_subject: list, root: str, output_path: str):
             _, pval_12 = ttest_ind(
                 list_E1[i, j, :], list_E2[i, j, :], alternative='two-sided')
             if np.isnan(pval_12):
-                pval_12 = 1000
+                pval_12 = 1
             pval_E12[i, j] = pval_12
 
             _, pval_13 = ttest_ind(
                 list_E1[i, j, :], list_E3[i, j, :], alternative='two-sided')
             if np.isnan(pval_13):
-                pval_13 = 1000
+                pval_13 = 1
             pval_E13[i, j] = pval_13
 
             _, pval_23 = ttest_ind(
                 list_E2[i, j, :], list_E3[i, j, :], alternative='two-sided')
             if np.isnan(pval_23):
-                pval_23 = 1000
+                pval_23 = 1
             pval_E23[i, j] = pval_23
 
-    pval_all = []
+    pval_all = np.stack([pval_E12, pval_E13, pval_E23], axis=2)
 
-    pval_all.append(pval_E12)
-    pval_all.append(pval_E13)
-    pval_all.append(pval_E23)
-
-    pval_all = np.stack(pval_all, axis=2)
-
-    np.save(output_path + '_pvals_E12_E13_E23.npy', pval_all)
+    np.save(output_path + 'pvals_E12_E13_E23.npy', pval_all)
 
 
 def to_float64(val):
@@ -316,7 +330,7 @@ def get_edges_of_interest(pval_file: str, output_path: str,
     pval[pval == 0] = 1
     pval = np.transpose(pval, (1, 2, 0))
 
-    # Removing regions where there are no connections once
+    # Removing regions where there are no connections
     mins = np.load(min_path)
     pval[mins == 0] = 1
     comparisons = np.count_nonzero(mins) / 2
@@ -418,13 +432,3 @@ def slurm_iter(root: str, code: str, patient_list: list = []):
         os.system('sbatch -J ' + patient + ' '
                   + path_to_analysis_code + 'slurm/submitIter.sh '
                   + path_to_code + ' ' + patient + ' ' + root + ' ' + code)
-
-
-if __name__ == '__main__':
-
-    labels_path = 'C:/Users/nicol/Desktop/temp/sub01_E1_labels.nii.gz'
-    streamlines_path = 'C:/Users/nicol/Desktop/temp/sub01_E1_tractogram_sift.trk'
-    with open('C:/Users/nicol/Desktop/temp/selected_edges.json', "r") as file:
-        edges = json.load(file)
-
-    extract_streamline(edges[0], labels_path, streamlines_path)

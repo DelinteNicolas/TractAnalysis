@@ -246,20 +246,25 @@ def mean_metrics_analysis(list_subjects: list, root: str, output_path: str, metr
 
             for k in range(len(list_subjects)):
 
-                ROI = tract_to_ROI(
-                    root + '/subjects/' + list_subjects[k] + '/dMRI/tractography/' + list_subjects[k] + '_' + edge_name[i] + '.trk')
+                ROI = tract_to_ROI(root + '/subjects/' + list_subjects[k]
+                                   + '/dMRI/tractography/' + list_subjects[k]
+                                   + '_' + edge_name[i] + '.trk')
 
-                if metric_name[j] == 'FA' or metric_name[j] == 'MD' or metric_name[j] == 'RD' or metric_name[j] == 'AD':
+                if metric_name[j] in ['FA', 'MD', 'RD', 'AD']:
                     model = 'dti'
-                elif metric_name[j] == 'fintra' or metric_name[j] == 'fextra' or metric_name[j] == 'fiso' or metric_name[j] == 'odi':
+                elif metric_name[j] in ['fintra', 'fextra', 'fiso', 'odi']:
                     model = 'noddi'
-                elif metric_name[j] == 'wFA' or metric_name[j] == 'wMD' or metric_name[j] == 'wRD' or metric_name[j] == 'wAD' or metric_name[j] == 'diamond_fractions_ftot' or metric_name[j] == 'diamond_fractions_csf':
+                elif metric_name[j] in ['wFA', 'wMD', 'wRD', 'wAD',
+                                        'diamond_fractions_ftot',
+                                        'diamond_fractions_csf']:
                     model = 'diamond'
                 else:
                     model = 'mf'
 
-                metric_map = nib.load(root + '/subjects/' + list_subjects[k] + '/dMRI/microstructure/' +
-                                      model + '/' + list_subjects[k] + '_' + metric_name[j] + '.nii.gz').get_fdata()
+                metric_map = nib.load(root + '/subjects/' + list_subjects[k]
+                                      + '/dMRI/microstructure/' + model + '/'
+                                      + list_subjects[k] + '_' + metric_name[j]
+                                      + '.nii.gz').get_fdata()
 
                 metric_in_ROI = metric_map[ROI != 0]
 
@@ -270,6 +275,21 @@ def mean_metrics_analysis(list_subjects: list, root: str, output_path: str, metr
             mean_sub = np.mean(mean_list)
 
             worksheet.write(str(alphabet[j]) + str(2 + i), mean_ROI)
+
+
+def labels_matching(excel_path, connectivity_matrix_index_file):
+
+    with open(connectivity_matrix_index_file, 'r') as f:
+        area_sorted = [line.rstrip('\n') for line in f]
+
+    df = pd.read_excel(excel_path)
+
+    for i in range(len(df['Area'])):
+        for j in range(len(area_sorted)):
+            if df['Area'][i] == area_sorted[j]:
+                df['Index_new'][i] = j
+
+    df.to_excel(excel_path.replace('.xlsx', '_bis.xlsx'))
 
 
 def data_to_json(excel_path: str):
