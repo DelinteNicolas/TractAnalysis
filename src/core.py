@@ -146,7 +146,8 @@ def connectivity_matrices(dwi_path: str, labels_path: str,
     middle_labels = []
     middle_area = []
 
-    unwanted = ['vessel', 'CSF', 'Vent', 'unknown', 'White_Matter', 'WM']
+    unwanted = ['vessel', 'CSF', 'Vent', 'unknown', 'White_Matter', 'WM',
+                'Chiasm']
 
     for i in range(len(values)):
         for j in range(len(df['Index'])):
