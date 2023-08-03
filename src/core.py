@@ -349,6 +349,7 @@ def get_edges_of_interest(pval_file: str, output_path: str,
 
         pval_cand = np.sort(pval[pval != 1])
         pval_cand_copy = pval_cand.copy()
+        print(len(pval_cand_copy))
 
         # False discovery rate
         Q = .2
