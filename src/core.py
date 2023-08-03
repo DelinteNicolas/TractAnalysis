@@ -365,7 +365,6 @@ def get_edges_of_interest(pval_file: str, output_path: str,
 
         # Temporary candidate ------------------------------
         selec = np.argwhere(np.isin(pval, pval_cand_copy[0]))
-        print(selec)
         print('Minimum p-value used instead of multiple correction')
 
     # First value of candidate pvalues
