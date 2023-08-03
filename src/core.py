@@ -361,7 +361,7 @@ def get_edges_of_interest(pval_file: str, output_path: str,
 
         print('Number of significant values found with Benjamini: ', len(selec))
 
-    elif len(selec) < 5:
+    if len(selec) < 5:
 
         # Temporary candidate ------------------------------
         selec = np.argwhere(np.isin(pval, pval_cand_copy[0]))
