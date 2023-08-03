@@ -341,13 +341,14 @@ def get_edges_of_interest(pval_file: str, output_path: str,
 
     pval_tresh = 0.05 / comparisons
     selec = np.argwhere(pval < pval_tresh)
-    print('Number of significant values found with Bonferroni : ', len(selec))
+    print('Number of significant values found with Bonferroni: ', len(selec))
 
     if len(selec) < 5:
 
         # Benjamini-Hochberg ------------------------------
 
         pval_cand = np.sort(pval[pval != 1])
+        pval_cand_copy = pval_cand.copy()
 
         # False discovery rate
         Q = .2
@@ -363,8 +364,7 @@ def get_edges_of_interest(pval_file: str, output_path: str,
     elif len(selec) < 5:
 
         # Temporary candidate ------------------------------
-        mi = np.array(np.unravel_index(np.argmin(pval), pval.shape))
-        selec = mi[np.newaxis, ...]
+        selec = np.argwhere(np.isin(pval, pval_cand_copy[0]))
         print('Minimum p-value used instead of multiple correction')
 
     # First value of candidate pvalues
