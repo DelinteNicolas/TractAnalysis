@@ -14,7 +14,34 @@ with warnings.catch_warnings():
     from dipy.tracking import utils
 
 
-def register_atlas_to_subj(fa_path: str, atlas_path: str, mni_fa_path: str,
+def register_labels_to_atlas(labels_path: str, mni_fa_path: str,
+                             output_path: str):
+    '''
+
+
+    Parameters
+    ----------
+    labels_path : str
+        DESCRIPTION.
+    mni_fa_path : str
+        DESCRIPTION.
+    output_path : str
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    '''
+
+    map_desikan_to_fa = find_transform(labels_path, mni_fa_path,
+                                       only_affine=True)
+
+    apply_transform(labels_path, map_desikan_to_fa, static_file=mni_fa_path,
+                    output_path=output_path, labels=True)
+
+
+def register_atlas_to_subj(fa_path: str, label_path: str, mni_fa_path: str,
                            output_path: str, static_mask_path: str):
     '''
     Two-step registration to obtain label in the diffusion space.
@@ -36,26 +63,43 @@ def register_atlas_to_subj(fa_path: str, atlas_path: str, mni_fa_path: str,
 
     '''
 
-    map_desikan_to_fa = find_transform(atlas_path, mni_fa_path,
-                                       only_affine=True)
-
     static_mask = nib.load(static_mask_path).get_fdata()
 
     map_mni_to_subj = find_transform(mni_fa_path, fa_path,
-                                     static_mask=static_mask)
+                                     hard_static_mask=static_mask)
 
-    inter_path = output_path[:-7] + '_inter.nii.gz'
-
-    apply_transform(atlas_path, map_desikan_to_fa, static_file=mni_fa_path,
-                    output_path=inter_path, labels=True)
-
-    apply_transform(inter_path, map_mni_to_subj, static_file=fa_path,
+    apply_transform(label_path, map_mni_to_subj, static_file=fa_path,
                     output_path=output_path, labels=True)
+
+
+def check_wanted(unwanted_keyword_list: list, long_name: str) -> bool:
+    '''
+
+
+    Parameters
+    ----------
+    unwanted_keyword_list : list
+        DESCRIPTION.
+    long_name : str
+        DESCRIPTION.
+
+    Returns
+    -------
+    bool
+        DESCRIPTION.
+
+    '''
+
+    for key in unwanted_keyword_list:
+        if key in long_name:
+            return False
+
+    return True
 
 
 def connectivity_matrices(dwi_path: str, labels_path: str,
                           streamlines_path: str, output_path: str,
-                          freeSurfer_labels: str, subjects_list: str):
+                          freeSurfer_labels: str):
     '''
     Creation of the connectivity matrix for each patient at each acquisition
     time.
@@ -102,9 +146,12 @@ def connectivity_matrices(dwi_path: str, labels_path: str,
     middle_labels = []
     middle_area = []
 
+    unwanted = ['vessel', 'CSF', 'Vent', 'unknown', 'White_Matter']
+
     for i in range(len(values)):
         for j in range(len(df['Index'])):
-            if (values[i] == df['Index'][j]):
+            wanted = check_wanted(unwanted, str(df['Area'][j]))
+            if (values[i] == df['Index'][j]) and wanted:
                 if 'right' in str(df['Area'][j]):
                     right_labels.append(values[i])
                     right_area.append(df['Area'][j])
@@ -131,17 +178,18 @@ def connectivity_matrices(dwi_path: str, labels_path: str,
                                   == labels_sorted[i], new_labels_value[i], 0)
     new_label_map = new_label_map.astype('int64')
 
-    M, grouping = utils.connectivity_matrix(streams_data, affine,
-                                            new_label_map,
-                                            return_mapping=True,
-                                            mapping_as_streamlines=True)
+    M, _ = utils.connectivity_matrix(streams_data, affine,
+                                     new_label_map,
+                                     return_mapping=True,
+                                     mapping_as_streamlines=True)
 
     np.fill_diagonal(M, 0)
     M = M.astype('float32')
     M = M / np.sum(M)
 
     fig, ax = plt.subplots()
-    ax.imshow(np.log1p(M * 100000), interpolation='nearest')
+    ax.imshow(np.log1p(M * len(trk.streamlines._offsets)),
+              interpolation='nearest')
     ax.set_yticks(np.arange(len(area_sorted)))
     ax.set_yticklabels(area_sorted)
 
@@ -152,14 +200,13 @@ def connectivity_matrices(dwi_path: str, labels_path: str,
     plt.title('Connectivity matrix')
     plt.xlabel("Labels")
 
-    with open(subjects_list, 'r') as read_file:
-        subjects_list = json.load(read_file)
+    labels_path = streamlines_path.replace(
+        '_tractogram', '_labels_connectivity_matrix')
+    labels_path = labels_path.replace('.trk', '.txt')
 
-    if 'sub01_E1' in labels_path:
-
-        with open(output_path + 'labels_connectivity_matrix.txt', 'w') as f:
-            for line in area_sorted:
-                f.write(str(line) + '\n')
+    with open(labels_path, 'w') as f:
+        for line in area_sorted:
+            f.write(str(line) + '\n')
 
     trac_save = trac.replace('.trk', '.npy')
     np.save(trac_save, M)
@@ -167,13 +214,13 @@ def connectivity_matrices(dwi_path: str, labels_path: str,
     return new_label_map
 
 
-def significance_level(list_subject: list, root: str, output_path: str):
+def significance_level(list_subject: str, root: str, output_path: str):
     '''
 
 
     Parameters
     ----------
-    list_subject : list
+    list_subject : str
         DESCRIPTION.
     root : str
         DESCRIPTION.
@@ -193,21 +240,22 @@ def significance_level(list_subject: list, root: str, output_path: str):
     list_E2 = []
     list_E3 = []
 
-    for i in range(len(list_subject)):
+    for sub in list_subject:
 
-        path = (root + 'subjects/' + str(list_subject[i])
-                + '/dMRI/tractography/' + str(list_subject[i])
-                + '_connectivity_matrix.npy')
+        path = (root + 'subjects/' + str(sub)
+                + '/dMRI/tractography/' + str(sub)
+                + '_connectivity_matrix_sift.npy')
         try:
             matrix = np.load(path)
         except FileNotFoundError:
+            print('Connectivity matrix not found for '+str(sub))
             continue
 
-        if 'E1' in str(list_subject[i]):
+        if 'E1' in str(sub):
             list_E1.append(matrix)
-        elif 'E2' in str(list_subject[i]):
+        elif 'E2' in str(sub):
             list_E2.append(matrix)
-        else:
+        elif 'E3' in str(sub):
             list_E3.append(matrix)
 
     list_E1 = np.stack(list_E1, axis=2)
@@ -224,30 +272,24 @@ def significance_level(list_subject: list, root: str, output_path: str):
             _, pval_12 = ttest_ind(
                 list_E1[i, j, :], list_E2[i, j, :], alternative='two-sided')
             if np.isnan(pval_12):
-                pval_12 = 1000
+                pval_12 = 1
             pval_E12[i, j] = pval_12
 
             _, pval_13 = ttest_ind(
                 list_E1[i, j, :], list_E3[i, j, :], alternative='two-sided')
             if np.isnan(pval_13):
-                pval_13 = 1000
+                pval_13 = 1
             pval_E13[i, j] = pval_13
 
             _, pval_23 = ttest_ind(
                 list_E2[i, j, :], list_E3[i, j, :], alternative='two-sided')
             if np.isnan(pval_23):
-                pval_23 = 1000
+                pval_23 = 1
             pval_E23[i, j] = pval_23
 
-    pval_all = []
+    pval_all = np.stack([pval_E12, pval_E13, pval_E23], axis=2)
 
-    pval_all.append(pval_E12)
-    pval_all.append(pval_E13)
-    pval_all.append(pval_E23)
-
-    pval_all = np.stack(pval_all, axis=2)
-
-    np.save(output_path + '_pvals_E12_E13_E23.npy', pval_all)
+    np.save(output_path + 'pvals_E12_E13_E23.npy', pval_all)
 
 
 def to_float64(val):
@@ -280,36 +322,36 @@ def get_edges_of_interest(pval_file: str, output_path: str,
 
     '''
 
-    m = np.load(pval_file)
+    pval = np.load(pval_file)
 
     # Removing duplicates due to symmetry
-    m = np.transpose(m, (2, 0, 1))
-    m = np.tril(m, k=0)
-    m[m == 0] = 1
-    m = np.transpose(m, (1, 2, 0))
+    pval = np.transpose(pval, (2, 0, 1))
+    pval = np.tril(pval, k=0)
+    pval[pval == 0] = 1
+    pval = np.transpose(pval, (1, 2, 0))
 
-    # Removing regions where there are no connections once
+    # Removing regions where there are no connections
     mins = np.load(min_path)
-    m[mins == 0] = 1
-    comparisons = np.count_nonzero(mins)/2
+    pval[mins == 0] = 1
+    comparisons = np.count_nonzero(mins) / 2
 
     # Multiple comparison pval correction
-    # comparisons = (m.shape[0] * m.shape[1]) / 2 - m.shape[0] / 2
-    pval = 0.05 / comparisons
+    # comparisons = (pval.shape[0] * pval.shape[1]) / 2 - pval.shape[0] / 2
+    pval_tresh = 0.05 / comparisons
 
-    l = np.argwhere(m < pval)
+    l = np.argwhere(pval < pval_tresh)
     # To be continued ...
 
     # Temporary candidate
-    mi = np.unravel_index(np.argmin(m), m.shape)
+    mi = np.unravel_index(np.argmin(pval), pval.shape)
     edge = tuple(mi[:2])
 
     json.dump([edge], open(output_path + 'selected_edges.json', 'w'),
               default=to_float64)
 
 
-def extract_streamline(edge: tuple, dwi_path: str, labels_path: str,
-                       streamlines_path: str):
+def extract_streamline(edge: tuple, labels_path: str,
+                       streamlines_path: str, excel_path: str):
     '''
     Creates a new file with the streamlines connecting both regions specified in
     the tuple 'edge'.
@@ -318,8 +360,6 @@ def extract_streamline(edge: tuple, dwi_path: str, labels_path: str,
     ----------
     edge : tuple
         Index of the regions of interest. Ex: (1,23)
-    dwi_path : str
-        Path to diffusion data.
     labels_path : str
         Path to volume containing the indexes.
     streamlines_path : str
@@ -341,15 +381,26 @@ def extract_streamline(edge: tuple, dwi_path: str, labels_path: str,
     # trk.to_corner()
     streamlines = trk.streamlines
 
-    mask1 = np.where(labels == int(edge[0]), 1, 0)
-    mask2 = np.where(labels == int(edge[1]), 1, 0)
+    df = pd.read_excel(excel_path)
+
+    mask1 = np.where(
+        labels == df.loc[df['Index_new'] == edge[0]]['Index'].iloc[0], 1, 0)
+    mask2 = np.where(
+        labels == df.loc[df['Index_new'] == edge[1]]['Index'].iloc[0], 1, 0)
 
     streamlines = utils.target(streamlines, affine, mask1, include=True)
     streamlines = utils.target(streamlines, affine, mask2, include=True)
 
     tract = StatefulTractogram(streamlines, img, Space.RASMM)
 
-    filename = streamlines_path[:-4] + '_' + str(edge[0]) + '_' + str(edge[1])
+    output_path = (streamlines_path.replace(streamlines_path.split('/')[-1], '')
+                   + 'tois/')
+
+    if not os.path.isdir(output_path):
+        os.mkdir(output_path)
+
+    filename = (output_path+streamlines_path.split('/')[-1][:-4] + '_'
+                + str(edge[0]) + '_' + str(edge[1]))
 
     save_trk(tract, filename + '.trk')
 
