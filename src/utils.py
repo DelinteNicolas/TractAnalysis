@@ -287,7 +287,7 @@ def labels_matching(excel_path, connectivity_matrix_index_file):
     for i in range(len(df['Area'])):
         for j in range(len(area_sorted)):
             if df['Area'][i] == area_sorted[j]:
-                df['Index_new'][i] = j
+                df['Index_new'][i] = str(j)
 
     df.to_excel(excel_path.replace('.xlsx', '_bis.xlsx'))
 

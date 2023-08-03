@@ -349,7 +349,6 @@ def get_edges_of_interest(pval_file: str, output_path: str,
 
         pval_cand = np.sort(pval[pval != 1])
         pval_cand_copy = pval_cand.copy()
-        print(len(pval_cand_copy))
 
         # False discovery rate
         Q = .2
@@ -366,6 +365,7 @@ def get_edges_of_interest(pval_file: str, output_path: str,
 
         # Temporary candidate ------------------------------
         selec = np.argwhere(np.isin(pval, pval_cand_copy[0]))
+        print(selec)
         print('Minimum p-value used instead of multiple correction')
 
     # First value of candidate pvalues
