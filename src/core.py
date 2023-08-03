@@ -334,18 +334,41 @@ def get_edges_of_interest(pval_file: str, output_path: str,
     # Removing regions where there are no connections
     mins = np.load(min_path)
     pval[mins == 0] = 1
-    comparisons = np.count_nonzero(mins) / 2
+    comparisons = np.count_nonzero(pval != 1) / pval.shape[2]
 
     # Multiple comparison pval correction
-    # comparisons = (pval.shape[0] * pval.shape[1]) / 2 - pval.shape[0] / 2
+    # Bonferroni --------------------------------------
+
     pval_tresh = 0.05 / comparisons
+    selec = np.argwhere(pval < pval_tresh)
+    print('Number of significant values found with Bonferroni : ', len(selec))
 
-    l = np.argwhere(pval < pval_tresh)
-    # To be continued ...
+    if len(selec) < 5:
 
-    # Temporary candidate
-    mi = np.unravel_index(np.argmin(pval), pval.shape)
-    edge = tuple(mi[:2])
+        # Benjamini-Hochberg ------------------------------
+
+        pval_cand = np.sort(pval[pval != 1])
+
+        # False discovery rate
+        Q = .2
+
+        for i, p in enumerate(pval_cand):
+            if p > (i+1)/comparisons*Q:
+                pval_cand[i] = 1
+
+        selec = np.argwhere(np.isin(pval, pval_cand[pval_cand != 1]))
+
+        print('Number of significant values found with Benjamini: ', len(selec))
+
+    elif len(selec) < 5:
+
+        # Temporary candidate ------------------------------
+        mi = np.array(np.unravel_index(np.argmin(pval), pval.shape))
+        selec = mi[np.newaxis, ...]
+        print('Minimum p-value used instead of multiple correction')
+
+    # First value of candidate pvalues
+    edge = tuple(selec[0][:2])
 
     json.dump([edge], open(output_path + 'selected_edges.json', 'w'),
               default=to_float64)
