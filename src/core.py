@@ -129,7 +129,6 @@ def connectivity_matrices(dwi_path: str, labels_path: str,
     labels = nib.load(labels_path).get_fdata()
 
     trk = load_tractogram(streamlines_path, 'same')
-    trk.to_corner()
     streams_data = trk.streamlines
 
     affine = nib.load(dwi_path).affine
