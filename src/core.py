@@ -12,6 +12,8 @@ with warnings.catch_warnings():
     from dipy.io.streamline import load_tractogram, save_trk
     from dipy.io.stateful_tractogram import Space, StatefulTractogram
     from dipy.tracking import utils
+from unravel.core import (get_fixel_weight, get_microstructure_map,
+                          get_weighted_mean, tensor_to_peak)
 
 
 def register_labels_to_atlas(labels_path: str, mni_fa_path: str,
@@ -429,9 +431,151 @@ def extract_streamline(edge: tuple, labels_path: str,
     save_trk(tract, filename + '.trk')
 
 
+def get_mean_tracts(trk_file: str, micro_path: str):
+    '''
+    Return means for all metrics for a single patient using UNRAVEL
+
+    Parameters
+    ----------
+    trk_file : str
+        DESCRIPTION.
+    micro_path : str
+        Patient specific path to microstructure folder
+
+    Returns
+    -------
+    mean : TYPE
+        DESCRIPTION.
+    dev : TYPE
+        DESCRIPTION.
+
+    '''
+
+    trk = load_tractogram(trk_file, 'same')
+    trk.to_vox()
+    trk.to_corner()
+
+    subject = micro_path.split('/')[-5]
+
+    mean_dic = {}
+    dev_dic = {}
+
+    # Diamond ------------------------------
+
+    tensor_files = [micro_path+'diamond/'+subject+'_diamond_t0.nii.gz',
+                    micro_path+'diamond/'+subject+'_diamond_t1.nii.gz']
+
+    tList = [tensor_to_peak(nib.load(tensor_files[0]).get_fdata()),
+             tensor_to_peak(nib.load(tensor_files[1]).get_fdata())]
+
+    fixel_weights, _, _ = get_fixel_weight(trk, tList, speed_up=True)
+
+    metric_list = ['FA', 'MD', 'RD', 'AD']
+
+    for m in metric_list:
+
+        map_files = [micro_path+'diamond/'+subject+'_diamond_t0_'+m+'.nii.gz',
+                     micro_path+'diamond/'+subject+'_diamond_t1_'+m+'.nii.gz']
+
+        metricMapList = [nib.load(map_files[0]).get_fdata(),
+                         nib.load(map_files[1]).get_fdata()]
+
+        microstructure_map = get_microstructure_map(fixel_weights,
+                                                    metricMapList)
+        mean, dev = get_weighted_mean(microstructure_map, fixel_weights)
+
+        mean_dic[m] = mean
+        dev_dic[m] = dev
+
+    # Microstructure fingerprinting --------
+
+    tensor_files = [micro_path+'mf/'+subject+'_mf_peak_f0.nii.gz',
+                    micro_path+'mf/'+subject+'_mf_peak_f1.nii.gz']
+
+    tList = [nib.load(tensor_files[0]).get_fdata(),
+             nib.load(tensor_files[1]).get_fdata()]
+
+    fixel_weights, _, _ = get_fixel_weight(trk, tList, speed_up=True)
+
+    metric_list = ['fvf', 'frac']
+
+    for m in metric_list:
+
+        map_files = [micro_path+'mf/'+subject+'_mf_'+m+'_f0.nii.gz',
+                     micro_path+'mf/'+subject+'_mf_'+m+'_f1.nii.gz']
+
+        metricMapList = [nib.load(map_files[0]).get_fdata(),
+                         nib.load(map_files[1]).get_fdata()]
+
+        microstructure_map = get_microstructure_map(fixel_weights,
+                                                    metricMapList)
+        mean, dev = get_weighted_mean(microstructure_map, fixel_weights)
+
+        mean_dic[m] = mean
+        dev_dic[m] = dev
+
+    return mean_dic, dev_dic
+
+
+def get_mean_tracts_study(root: str, selected_edges_path: str,
+                          output_path: str):
+    '''
+
+
+    Parameters
+    ----------
+    root : str
+        DESCRIPTION.
+    selected_edges_path : str
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    '''
+
+    subjects_list = root + 'subjects/subj_list.json'
+
+    with open(subjects_list, 'r') as read_file:
+        subj_list = json.load(read_file)
+    with open(selected_edges_path, 'r') as read_file:
+        edge_list = json.load(read_file)
+
+    dic_tot = {}
+    dic_tot['Mean'] = {}
+    dic_tot['Dev'] = {}
+
+    for sub in subj_list:
+
+        micro_path = root+'subjects/'+sub+'/dMRI/microstructure/'
+        tract_path = root+'subjects/'+sub+'/dMRI/tractography/tois/'
+
+        dic_tot['Mean'][sub] = {}
+        dic_tot['Dev'][sub] = {}
+
+        for edge in edge_list:
+
+            try:
+                trk_file = (tract_path + sub + '_tractogram_sift_'
+                            + str(edge[0]) + '_' + str(edge[1])+'.trk')
+            except FileNotFoundError:
+                print('.trk file not found for edge ' + str(edge)+' in patient '
+                      + sub)
+                continue
+
+            mean_dic, dev_dic = get_mean_tracts(trk_file, micro_path)
+
+            dic_tot['Mean'][sub][str(edge)] = mean_dic
+            dic_tot['Dev'][sub][str(edge)] = dev_dic
+
+    json.dump(dic_tot, open(output_path+'unrvel_means.json', 'w'),
+              default=to_float64)
+
+
 def slurm_iter(root: str, code: str, patient_list: list = []):
     '''
-    Launches the scripts.py pyhton file for all patients in patient_list
+    Launches the scripts.py python file for all patients in patient_list
 
     Parameters
     ----------
