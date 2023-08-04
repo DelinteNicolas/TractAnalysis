@@ -254,7 +254,7 @@ def significance_level(list_subject: str, root: str, output_path: str):
     list_E2 = []
     list_E3 = []
 
-    for sub in list_subject:
+    for sub in subj_list:
 
         path = (root + 'subjects/' + str(sub)
                 + '/dMRI/tractography/' + str(sub)
