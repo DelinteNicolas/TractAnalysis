@@ -235,7 +235,20 @@ def significance_level(list_subject: str, root: str, output_path: str):
     '''
 
     with open(list_subject, 'r') as read_file:
-        list_subject = json.load(read_file)
+        subj_list = json.load(read_file)
+
+    if os.path.isfile(list_subject.replace('subj_list.json', 'control_list.json')):
+
+        with open(list_subject.replace('subj_list.json', 'control_list.json'), 'r') as control_file:
+            control_list = json.load(control_file)
+
+        copy_subj_list = []
+
+        for i in range(len(subj_list)):
+            if str(subj_list[i]) not in control_list:
+                copy_subj_list.append(str(subj_list[i]))
+
+        subj_list = copy_subj_list
 
     list_E1 = []
     list_E2 = []
@@ -249,7 +262,7 @@ def significance_level(list_subject: str, root: str, output_path: str):
         try:
             matrix = np.load(path)
         except FileNotFoundError:
-            print('Connectivity matrix not found for '+str(sub))
+            print('Connectivity matrix not found for ' + str(sub))
             continue
 
         if 'E1' in str(sub):
@@ -354,7 +367,7 @@ def get_edges_of_interest(pval_file: str, output_path: str,
         Q = .2
 
         for i, p in enumerate(pval_cand):
-            if p > (i+1)/comparisons*Q:
+            if p > (i + 1) / comparisons * Q:
                 pval_cand[i] = 1
 
         selec = np.argwhere(np.isin(pval, pval_cand[pval_cand != 1]))
@@ -423,7 +436,7 @@ def extract_streamline(edge: tuple, labels_path: str,
     if not os.path.isdir(output_path):
         os.mkdir(output_path)
 
-    filename = (output_path+streamlines_path.split('/')[-1][:-4] + '_'
+    filename = (output_path + streamlines_path.split('/')[-1][:-4] + '_'
                 + str(edge[0]) + '_' + str(edge[1]))
 
     save_trk(tract, filename + '.trk')
