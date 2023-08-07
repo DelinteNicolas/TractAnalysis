@@ -622,7 +622,7 @@ def get_mean_tracts_study(root: str, selected_edges_path: str,
             dic_tot['Mean'][sub][str(edge)] = mean_dic
             dic_tot['Dev'][sub][str(edge)] = dev_dic
 
-    json.dump(dic_tot, open(output_path+'unrvel_means.json', 'w'),
+    json.dump(dic_tot, open(output_path+'unravel_means.json', 'w'),
               default=to_float64)
 
 
