@@ -629,7 +629,8 @@ def get_mean_tracts_study(root: str, selected_edges_path: str,
               default=to_float64)
 
 
-def slurm_iter(root: str, code: str, patient_list: list = []):
+def slurm_iter(root: str, code: str, patient_list: list = [],
+               single_launch: bool = False):
     '''
     Launches the scripts.py python file for all patients in patient_list
 
@@ -654,6 +655,9 @@ def slurm_iter(root: str, code: str, patient_list: list = []):
     path_to_analysis_code = root.replace(
         root.split('/')[-2] + '/', '') + 'TractAnalysis/'
     path_to_code = path_to_analysis_code + 'src/scripts.py'
+
+    if single_launch:
+        patient_list = ['single']
 
     for patient in patient_list:
 
