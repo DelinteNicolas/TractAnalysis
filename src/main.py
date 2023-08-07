@@ -65,12 +65,12 @@ if __name__ == '__main__':
     # edge = get_edges_of_interest(pval_file, output_path=output_analysis_path,
     #                              min_path=min_path)
 
-    print('Launching jobs to extract tract of interest')
-    slurm_iter(root, 'extraction')  # , patient_list=['sub01_E1'])
+    # print('Launching jobs to extract tract of interest')
+    # slurm_iter(root, 'extraction')  # , patient_list=['sub01_E1'])
 
 # =============================================================================
 # Third section - Computing tract microstructure
 # =============================================================================
 
-    # print('Estimating mean tract microscture metrics')
-    # get_mean_tracts_study(root, selected_edges_path, output_analysis_path)
+    print('Estimating mean tract microscture metrics')
+    get_mean_tracts_study(root, selected_edges_path, output_analysis_path)
