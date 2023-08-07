@@ -14,6 +14,7 @@ with warnings.catch_warnings():
     from dipy.tracking import utils
 from unravel.core import (get_fixel_weight, get_microstructure_map,
                           get_weighted_mean, tensor_to_peak)
+from unravel.utils import tensor_to_DTI
 
 
 def register_labels_to_atlas(labels_path: str, mni_fa_path: str,
@@ -443,6 +444,40 @@ def extract_streamline(edge: tuple, labels_path: str,
     save_trk(tract, filename + '.trk')
 
 
+def create_tensor_metrics(path: str):
+    '''
+
+
+    Parameters
+    ----------
+    path : str
+        Ex: '/.../diamond/subjectName'
+
+    Returns
+    -------
+    None.
+
+    '''
+
+    for tensor in ['t0', 't1']:
+
+        img = nib.load(path+'_diamond_'+tensor+'.nii.gz')
+        t = img.get_fdata()
+
+        FA, AD, RD, MD = tensor_to_DTI(t)
+
+        metric = {}
+        metric['FA'] = FA
+        metric['MD'] = MD
+        metric['AD'] = AD
+        metric['RD'] = RD
+
+        for m in metric:
+            out = nib.Nifti1Image(metric[m].real, img.affine)
+            out.header.get_xyzt_units()
+            out.to_filename(path+'_diamond_'+m+'_'+tensor+'.nii.gz')
+
+
 def get_mean_tracts(trk_file: str, micro_path: str):
     '''
     Return means for all metrics for a single patient using UNRAVEL
@@ -483,6 +518,11 @@ def get_mean_tracts(trk_file: str, micro_path: str):
     fixel_weights, _, _ = get_fixel_weight(trk, tList, speed_up=True)
 
     metric_list = ['FA', 'MD', 'RD', 'AD']
+
+    if not os.path.isfile(micro_path+'diamond/'+subject
+                          + '_diamond_FA_t0.nii.gz'):
+
+        create_tensor_metrics(micro_path+'diamond/'+subject)
 
     for m in metric_list:
 
