@@ -2,7 +2,7 @@ import json
 from utils import (print_views_from_study_folder, get_mean_connectivity,
                    check_labels, labels_matching)
 from core import (slurm_iter, significance_level, get_edges_of_interest,
-                  register_labels_to_atlas)
+                  register_labels_to_atlas, get_mean_tracts_study)
 
 
 if __name__ == '__main__':
@@ -20,6 +20,7 @@ if __name__ == '__main__':
     mni_fa_path = path_to_analysis_code + 'data/FSL_HCP1065_FA_1mm.nii.gz'
     label_atlas_path = output_analysis_path + 'atlas_desikan_killiany_mni.nii.gz'
     freeSurfer_labels = path_to_analysis_code + 'data/FreeSurfer_labels.xlsx'
+    selected_edges_path = output_analysis_path+'selected_edges.json'
 
     with open(subjects_list, 'r') as read_file:
         list_subjects = json.load(read_file)
@@ -65,3 +66,10 @@ if __name__ == '__main__':
 
     # print('Launching jobs to extract tract of interest')
     # slurm_iter(root, 'extraction', patient_list=['sub01_E1'])
+
+# =============================================================================
+# Third section - Computing tract microstructure
+# =============================================================================
+
+    print('Estimating mean tract microscture metrics')
+    get_mean_tracts_study(root, selected_edges_path, output_analysis_path)
