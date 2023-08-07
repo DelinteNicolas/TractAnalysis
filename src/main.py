@@ -2,7 +2,7 @@ import json
 from utils import (print_views_from_study_folder, get_mean_connectivity,
                    check_labels, labels_matching)
 from core import (slurm_iter, significance_level, get_edges_of_interest,
-                  register_labels_to_atlas)
+                  register_labels_to_atlas, get_mean_tracts_study)
 
 
 if __name__ == '__main__':
@@ -20,6 +20,7 @@ if __name__ == '__main__':
     mni_fa_path = path_to_analysis_code + 'data/FSL_HCP1065_FA_1mm.nii.gz'
     label_atlas_path = output_analysis_path + 'atlas_desikan_killiany_mni.nii.gz'
     freeSurfer_labels = path_to_analysis_code + 'data/FreeSurfer_labels.xlsx'
+    selected_edges_path = output_analysis_path+'selected_edges.json'
 
     with open(subjects_list, 'r') as read_file:
         list_subjects = json.load(read_file)
@@ -38,15 +39,16 @@ if __name__ == '__main__':
     # print('Sending labels to mni space')
     # register_labels_to_atlas(labels_path, mni_fa_path, label_atlas_path)
 
-    print('Launching jobs to compute connectivity matrices')
-    slurm_iter(root, 'connectivity')
+    # print('Launching jobs to compute connectivity matrices')
+    # slurm_iter(root, 'connectivity')
 
 # =============================================================================
 # Second section - Tract extraction
 # =============================================================================
 
     # print('Verification of labels')
-    # unwanted = ['sub13_E1', 'sub56_E1', 'sub304_E1']
+    # # unwanted = ['sub13_E1', 'sub56_E1', 'sub304_E1']
+    # unwanted = []
     # p_list = [p for p in list_subjects if p not in unwanted]
     # check_labels(p_list, root, output_analysis_path)
 
@@ -64,4 +66,11 @@ if __name__ == '__main__':
     #                              min_path=min_path)
 
     # print('Launching jobs to extract tract of interest')
-    # slurm_iter(root, 'extraction', patient_list=['sub01_E1'])
+    # slurm_iter(root, 'extraction')  # , patient_list=['sub01_E1'])
+
+# =============================================================================
+# Third section - Computing tract microstructure
+# =============================================================================
+
+    print('Estimating mean tract microscture metrics')
+    slurm_iter(root, 'estimation', patient_list=['Third_section'])

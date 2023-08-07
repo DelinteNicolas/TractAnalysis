@@ -180,12 +180,13 @@ def check_labels(list_subjects: str, root: str, output_path: str):
     else:
         print('Check successful')
 
-    with open(output_path + '_labels_general_list.txt', 'w') as f:
+    with open(output_path + 'labels_general_list.txt', 'w') as f:
         for line in general_list:
             f.write(str(line) + '\n')
 
 
-def metrics_analysis(list_subjects: list, root: str, output_path: str, metric_name: list, edge_name: str):
+def metrics_analysis(list_subjects: list, root: str, output_path: str,
+                     metric_name: list, edge_name: str):
 
     workbook = xlsxwriter.Workbook(output_path + 'metrics_analysis.xlsx')
 
@@ -201,23 +202,28 @@ def metrics_analysis(list_subjects: list, root: str, output_path: str, metric_na
             worksheet.write('A' + str(2 + j), str(list_subjects[j]))
 
             ROI = tract_to_ROI(
-                root + '/subjects/' + list_subjects[j] + '/dMRI/tractography/' + list_subjects[j] + '_' + edge_name[i] + '.trk')
+                root + '/subjects/' + list_subjects[j] + '/dMRI/tractography/'
+                + list_subjects[j] + '_' + edge_name[i] + '.trk')
 
             for k in range(len(metric_name)):
 
                 worksheet.write(str(alphabet[k]) + str(1), metric_name[k])
 
-                if metric_name[k] == 'FA' or metric_name[k] == 'MD' or metric_name[k] == 'RD' or metric_name[k] == 'AD':
+                if metric_name[k] in ['FA', 'MD', 'RD', 'AD']:
                     model = 'dti'
-                elif metric_name[k] == 'fintra' or metric_name[k] == 'fextra' or metric_name[k] == 'fiso' or metric_name[k] == 'odi':
+                elif metric_name[k] in ['fintra', 'fextra', 'fiso', 'odi']:
                     model = 'noddi'
-                elif metric_name[k] == 'wFA' or metric_name[k] == 'wMD' or metric_name[k] == 'wRD' or metric_name[k] == 'wAD' or metric_name[k] == 'diamond_fractions_ftot' or metric_name[k] == 'diamond_fractions_csf':
+                elif metric_name[k] in ['wFA', 'wMD', 'wRD', 'wAD',
+                                        'diamond_fractions_ftot',
+                                        'diamond_fractions_csf']:
                     model = 'diamond'
                 else:
                     model = 'mf'
 
-                metric_map = nib.load(root + '/subjects/' + list_subjects[j] + '/dMRI/microstructure/'
-                                      + model + '/' + list_subjects[j] + '_' + metric_name[k] + '.nii.gz').get_fdata()
+                metric_map = nib.load(root + '/subjects/' + list_subjects[j]
+                                      + '/dMRI/microstructure/' + model + '/'
+                                      + list_subjects[j] + '_' + metric_name[k]
+                                      + '.nii.gz').get_fdata()
 
                 metric_in_ROI = metric_map[ROI != 0]
 
@@ -226,7 +232,8 @@ def metrics_analysis(list_subjects: list, root: str, output_path: str, metric_na
                 worksheet.write(str(alphabet[k]) + str(2 + j), mean_ROI)
 
 
-def mean_metrics_analysis(list_subjects: list, root: str, output_path: str, metric_name: list, edge_name: str):
+def mean_metrics_analysis(list_subjects: list, root: str, output_path: str,
+                          metric_name: list, edge_name: str):
 
     workbook = xlsxwriter.Workbook(output_path + 'mean_metrics_analysis.xlsx')
     worksheet = workbook.add_worksheet()
