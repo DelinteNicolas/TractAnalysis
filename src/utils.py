@@ -185,103 +185,48 @@ def check_labels(list_subjects: str, root: str, output_path: str):
             f.write(str(line) + '\n')
 
 
-def metrics_analysis(list_subjects: list, root: str, output_path: str,
-                     metric_name: list, edge_name: str):
+def metrics_analysis(list_subjects: list, root: str, output_path: str, metric_name: list, edge_name: str):
 
-    workbook = xlsxwriter.Workbook(output_path + 'metrics_analysis.xlsx')
+    dataframe = {}
 
-    alphabet = list(string.ascii_uppercase)[1:len(metric_name)]
-
-    for i in range(len(edge_name)):
-
-        worksheet = workbook.add_worksheet(str(edge_name))
-        worksheet.write('A1', 'Subjects \ Metrics')
-
-        for j in range(len(list_subjects)):
-
-            worksheet.write('A' + str(2 + j), str(list_subjects[j]))
+    for i, r in enumerate(edge_name):
+        for j, sub in enumerate(list_subjects):
 
             ROI = tract_to_ROI(
-                root + '/subjects/' + list_subjects[j] + '/dMRI/tractography/'
-                + list_subjects[j] + '_' + edge_name[i] + '.trk')
+                root + '/subjects/' + sub + '/dMRI/tractography/tois/' + sub + '_tractogram_sift_' + r + '.trk')
 
-            for k in range(len(metric_name)):
+            for k, m in enumerate(metric_name):
 
-                worksheet.write(str(alphabet[k]) + str(1), metric_name[k])
-
-                if metric_name[k] in ['FA', 'MD', 'RD', 'AD']:
+                if m in ['FA', 'MD', 'RD', 'AD']:
                     model = 'dti'
-                elif metric_name[k] in ['fintra', 'fextra', 'fiso', 'odi']:
+                elif m in ['noddi_fintra', 'noddi_fextra', 'noddi_fiso', 'noddi_odi']:
                     model = 'noddi'
-                elif metric_name[k] in ['wFA', 'wMD', 'wRD', 'wAD',
-                                        'diamond_fractions_ftot',
-                                        'diamond_fractions_csf']:
+                elif m in ['wFA', 'wMD', 'wRD', 'wAD', 'diamond_fractions_ftot', 'diamond_fractions_csf']:
                     model = 'diamond'
                 else:
                     model = 'mf'
 
-                metric_map = nib.load(root + '/subjects/' + list_subjects[j]
-                                      + '/dMRI/microstructure/' + model + '/'
-                                      + list_subjects[j] + '_' + metric_name[k]
-                                      + '.nii.gz').get_fdata()
+                metric_map = nib.load(root + '/subjects/' + sub + '/dMRI/microstructure/'
+                                      + model + '/' + sub + '_' + m + '.nii.gz').get_fdata()
 
                 metric_in_ROI = metric_map[ROI != 0]
 
                 mean_ROI = np.mean(metric_in_ROI[metric_in_ROI != 0])
+                std_ROI = np.std(metric_in_ROI[metric_in_ROI != 0])
 
-                worksheet.write(str(alphabet[k]) + str(2 + j), mean_ROI)
+                if(np.isnan(mean_ROI) == True):
+                    mean_ROI = 0
+                if(np.isnan(std_ROI) == True):
+                    std_ROI = 0
 
+                dataframe['Mean', sub, r, m] = mean_ROI
+                dataframe['Dev', sub, r, m] = std_ROI
 
-def mean_metrics_analysis(list_subjects: list, root: str, output_path: str,
-                          metric_name: list, edge_name: str):
+    dataframe2 = pd.DataFrame(dataframe, index=['Value']).T
+    dataframe2 = dataframe2.rename_axis(['Dic', 'Patient', 'Region', 'Metric'])
+    dataframe2 = dataframe2.sort_values(by='Dic', ascending=False)
 
-    workbook = xlsxwriter.Workbook(output_path + 'mean_metrics_analysis.xlsx')
-    worksheet = workbook.add_worksheet()
-    worksheet.write('A1', 'Area \ Metrics')
-
-    alphabet = list(string.ascii_uppercase)[1:len(metric_name)]
-
-    for i in range(len(edge_name)):
-
-        worksheet.write('A' + str(2 + i), str(edge_name[i]))
-
-        for j in range(len(metric_name)):
-
-            worksheet.write(str(alphabet[j]) + str(1), metric_name[j])
-
-            mean_list = []
-
-            for k in range(len(list_subjects)):
-
-                ROI = tract_to_ROI(root + '/subjects/' + list_subjects[k]
-                                   + '/dMRI/tractography/' + list_subjects[k]
-                                   + '_' + edge_name[i] + '.trk')
-
-                if metric_name[j] in ['FA', 'MD', 'RD', 'AD']:
-                    model = 'dti'
-                elif metric_name[j] in ['fintra', 'fextra', 'fiso', 'odi']:
-                    model = 'noddi'
-                elif metric_name[j] in ['wFA', 'wMD', 'wRD', 'wAD',
-                                        'diamond_fractions_ftot',
-                                        'diamond_fractions_csf']:
-                    model = 'diamond'
-                else:
-                    model = 'mf'
-
-                metric_map = nib.load(root + '/subjects/' + list_subjects[k]
-                                      + '/dMRI/microstructure/' + model + '/'
-                                      + list_subjects[k] + '_' + metric_name[j]
-                                      + '.nii.gz').get_fdata()
-
-                metric_in_ROI = metric_map[ROI != 0]
-
-                mean_ROI = np.mean(metric_in_ROI[metric_in_ROI != 0])
-
-                mean_list.append(mean_ROI)
-
-            mean_sub = np.mean(mean_list)
-
-            worksheet.write(str(alphabet[j]) + str(2 + i), mean_ROI)
+    return dataframe2
 
 
 def labels_matching(excel_path, connectivity_matrix_index_file):
