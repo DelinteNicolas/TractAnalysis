@@ -467,7 +467,7 @@ def get_mean_tracts(trk_file: str, micro_path: str):
     trk.to_vox()
     trk.to_corner()
 
-    subject = micro_path.split('/')[-5]
+    subject = micro_path.split('/')[-4]
 
     mean_dic = {}
     dev_dic = {}
