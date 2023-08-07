@@ -73,4 +73,4 @@ if __name__ == '__main__':
 # =============================================================================
 
     print('Estimating mean tract microscture metrics')
-    slurm_iter(root, 'estimation')
+    slurm_iter(root, 'estimation', single_launch=True)
