@@ -46,31 +46,31 @@ if __name__ == '__main__':
 # Second section - Tract extraction
 # =============================================================================
 
-    print('Verification of labels')
-    # unwanted = ['sub13_E1', 'sub56_E1', 'sub304_E1']
-    unwanted = []
-    p_list = [p for p in list_subjects if p not in unwanted]
-    check_labels(p_list, root, output_analysis_path)
+    # print('Verification of labels')
+    # # unwanted = ['sub13_E1', 'sub56_E1', 'sub304_E1']
+    # unwanted = []
+    # p_list = [p for p in list_subjects if p not in unwanted]
+    # check_labels(p_list, root, output_analysis_path)
 
-    print('Indexing new labels in excel file')
-    labels_matching(freeSurfer_labels, connectivity_matrix_index_file)
+    # print('Indexing new labels in excel file')
+    # labels_matching(freeSurfer_labels, connectivity_matrix_index_file)
 
-    print('Computing p-values of connectivity matrices')
-    significance_level(subjects_list, root, output_analysis_path)
+    # print('Computing p-values of connectivity matrices')
+    # significance_level(subjects_list, root, output_analysis_path)
 
-    print('Computing mean connectivity')
-    get_mean_connectivity(subjects_list, root, output_analysis_path)
+    # print('Computing mean connectivity')
+    # get_mean_connectivity(subjects_list, root, output_analysis_path)
 
-    print('Finding most relevant connectivity edges')
-    edge = get_edges_of_interest(pval_file, output_path=output_analysis_path,
-                                 min_path=min_path)
+    # print('Finding most relevant connectivity edges')
+    # edge = get_edges_of_interest(pval_file, output_path=output_analysis_path,
+    #                              min_path=min_path)
 
-    print('Launching jobs to extract tract of interest')
-    slurm_iter(root, 'extraction', patient_list=['sub01_E1'])
+    # print('Launching jobs to extract tract of interest')
+    # slurm_iter(root, 'extraction', patient_list=['sub01_E1'])
 
 # =============================================================================
 # Third section - Computing tract microstructure
 # =============================================================================
 
-    # print('Estimating mean tract microscture metrics')
-    # get_mean_tracts_study(root, selected_edges_path, output_analysis_path)
+    print('Estimating mean tract microscture metrics')
+    get_mean_tracts_study(root, selected_edges_path, output_analysis_path)
