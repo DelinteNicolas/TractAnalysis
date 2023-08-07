@@ -180,7 +180,7 @@ def check_labels(list_subjects: str, root: str, output_path: str):
     else:
         print('Check successful')
 
-    with open(output_path + '_labels_general_list.txt', 'w') as f:
+    with open(output_path + 'labels_general_list.txt', 'w') as f:
         for line in general_list:
             f.write(str(line) + '\n')
 
@@ -219,7 +219,6 @@ def metrics_analysis(list_subjects: list, root: str, output_path: str,
                     model = 'diamond'
                 else:
                     model = 'mf'
-
 
                 metric_map = nib.load(root + '/subjects/' + list_subjects[j]
                                       + '/dMRI/microstructure/' + model + '/'

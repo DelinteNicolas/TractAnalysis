@@ -14,6 +14,7 @@ with warnings.catch_warnings():
     from dipy.tracking import utils
 from unravel.core import (get_fixel_weight, get_microstructure_map,
                           get_weighted_mean, tensor_to_peak)
+from unravel.utils import tensor_to_DTI
 
 
 def register_labels_to_atlas(labels_path: str, mni_fa_path: str,
@@ -443,6 +444,40 @@ def extract_streamline(edge: tuple, labels_path: str,
     save_trk(tract, filename + '.trk')
 
 
+def create_tensor_metrics(path: str):
+    '''
+
+
+    Parameters
+    ----------
+    path : str
+        Ex: '/.../diamond/subjectName'
+
+    Returns
+    -------
+    None.
+
+    '''
+
+    for tensor in ['t0', 't1']:
+
+        img = nib.load(path+'_diamond_'+tensor+'.nii.gz')
+        t = img.get_fdata()
+
+        FA, AD, RD, MD = tensor_to_DTI(t)
+
+        metric = {}
+        metric['FA'] = FA
+        metric['MD'] = MD
+        metric['AD'] = AD
+        metric['RD'] = RD
+
+        for m in metric:
+            out = nib.Nifti1Image(metric[m].real, img.affine)
+            out.header.get_xyzt_units()
+            out.to_filename(path+'_diamond_'+m+'_'+tensor+'.nii.gz')
+
+
 def get_mean_tracts(trk_file: str, micro_path: str):
     '''
     Return means for all metrics for a single patient using UNRAVEL
@@ -467,7 +502,7 @@ def get_mean_tracts(trk_file: str, micro_path: str):
     trk.to_vox()
     trk.to_corner()
 
-    subject = micro_path.split('/')[-5]
+    subject = micro_path.split('/')[-4]
 
     mean_dic = {}
     dev_dic = {}
@@ -484,10 +519,15 @@ def get_mean_tracts(trk_file: str, micro_path: str):
 
     metric_list = ['FA', 'MD', 'RD', 'AD']
 
+    if not os.path.isfile(micro_path+'diamond/'+subject
+                          + '_diamond_FA_t0.nii.gz'):
+
+        create_tensor_metrics(micro_path+'diamond/'+subject)
+
     for m in metric_list:
 
-        map_files = [micro_path+'diamond/'+subject+'_diamond_t0_'+m+'.nii.gz',
-                     micro_path+'diamond/'+subject+'_diamond_t1_'+m+'.nii.gz']
+        map_files = [micro_path+'diamond/'+subject+'_diamond_'+m+'_t0.nii.gz',
+                     micro_path+'diamond/'+subject+'_diamond_'+m+'_t1.nii.gz']
 
         metricMapList = [nib.load(map_files[0]).get_fdata(),
                          nib.load(map_files[1]).get_fdata()]
@@ -571,17 +611,21 @@ def get_mean_tracts_study(root: str, selected_edges_path: str,
             try:
                 trk_file = (tract_path + sub + '_tractogram_sift_'
                             + str(edge[0]) + '_' + str(edge[1])+'.trk')
+
+                mean_dic, dev_dic = get_mean_tracts(trk_file, micro_path)
+
             except FileNotFoundError:
                 print('.trk file not found for edge ' + str(edge)+' in patient '
                       + sub)
                 continue
-
-            mean_dic, dev_dic = get_mean_tracts(trk_file, micro_path)
+            except IndexError:
+                print('IndexError with subject '+sub)
+                continue
 
             dic_tot['Mean'][sub][str(edge)] = mean_dic
             dic_tot['Dev'][sub][str(edge)] = dev_dic
 
-    json.dump(dic_tot, open(output_path+'unrvel_means.json', 'w'),
+    json.dump(dic_tot, open(output_path+'unravel_means.json', 'w'),
               default=to_float64)
 
 
