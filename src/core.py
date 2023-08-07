@@ -618,6 +618,9 @@ def get_mean_tracts_study(root: str, selected_edges_path: str,
                 print('.trk file not found for edge ' + str(edge)+' in patient '
                       + sub)
                 continue
+            except IndexError:
+                print('IndexError with subject '+sub)
+                continue
 
             dic_tot['Mean'][sub][str(edge)] = mean_dic
             dic_tot['Dev'][sub][str(edge)] = dev_dic

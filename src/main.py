@@ -73,4 +73,4 @@ if __name__ == '__main__':
 # =============================================================================
 
     print('Estimating mean tract microscture metrics')
-    get_mean_tracts_study(root, selected_edges_path, output_analysis_path)
+    slurm_iter(root, 'estimation')
