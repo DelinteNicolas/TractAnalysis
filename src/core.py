@@ -526,8 +526,8 @@ def get_mean_tracts(trk_file: str, micro_path: str):
 
     for m in metric_list:
 
-        map_files = [micro_path+'diamond/'+subject+'_diamond_t0_'+m+'.nii.gz',
-                     micro_path+'diamond/'+subject+'_diamond_t1_'+m+'.nii.gz']
+        map_files = [micro_path+'diamond/'+subject+'_diamond_'+m+'_t0.nii.gz',
+                     micro_path+'diamond/'+subject+'_diamond_'+m+'_t1.nii.gz']
 
         metricMapList = [nib.load(map_files[0]).get_fdata(),
                          nib.load(map_files[1]).get_fdata()]
