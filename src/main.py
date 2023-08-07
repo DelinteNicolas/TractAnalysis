@@ -14,19 +14,19 @@ if __name__ == '__main__':
                              + 'TractAnalysis/')
     subjects_list = root + 'subjects/subj_list.json'
     output_analysis_path = path_to_analysis_code + 'output_analysis/'
-    pval_file = output_analysis_path+'pvals_E12_E13_E23.npy'
-    min_path = output_analysis_path+'min_connectivity_matrix.npy'
+    pval_file = output_analysis_path + 'pvals_E12_E13_E23.npy'
+    min_path = output_analysis_path + 'min_connectivity_matrix.npy'
     labels_path = path_to_analysis_code + 'data/atlas_desikan_killiany.nii.gz'
     mni_fa_path = path_to_analysis_code + 'data/FSL_HCP1065_FA_1mm.nii.gz'
-    label_atlas_path = output_analysis_path+'atlas_desikan_killiany_mni.nii.gz'
+    label_atlas_path = output_analysis_path + 'atlas_desikan_killiany_mni.nii.gz'
     freeSurfer_labels = path_to_analysis_code + 'data/FreeSurfer_labels.xlsx'
     selected_edges_path = output_analysis_path+'selected_edges.json'
 
     with open(subjects_list, 'r') as read_file:
         list_subjects = json.load(read_file)
 
-    connectivity_matrix_index_file = (root+'subjects/'+'sub01_E1'
-                                      + '/dMRI/tractography/'+'sub01_E1'
+    connectivity_matrix_index_file = (root + 'subjects/' + 'sub01_E1'
+                                      + '/dMRI/tractography/' + 'sub01_E1'
                                       + '_labels_connectivity_matrix_sift.txt')
 
 # =============================================================================
@@ -39,8 +39,8 @@ if __name__ == '__main__':
     # print('Sending labels to mni space')
     # register_labels_to_atlas(labels_path, mni_fa_path, label_atlas_path)
 
-    # print('Launching jobs to compute connectivity matrices')
-    # slurm_iter(root, 'connectivity')
+    print('Launching jobs to compute connectivity matrices')
+    slurm_iter(root, 'connectivity')
 
 # =============================================================================
 # Second section - Tract extraction

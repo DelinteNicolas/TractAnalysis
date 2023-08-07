@@ -220,6 +220,7 @@ def metrics_analysis(list_subjects: list, root: str, output_path: str,
                 else:
                     model = 'mf'
 
+
                 metric_map = nib.load(root + '/subjects/' + list_subjects[j]
                                       + '/dMRI/microstructure/' + model + '/'
                                       + list_subjects[j] + '_' + metric_name[k]
@@ -293,8 +294,8 @@ def labels_matching(excel_path, connectivity_matrix_index_file):
 
     for i in range(len(df['Area'])):
         for j in range(len(area_sorted)):
-            if df['Area'][i] == area_sorted[j]:
-                df['Index_new'][i] = int(j)
+            if df.loc[i, 'Area'] == area_sorted[j]:
+                df.loc[i, 'Index_new'] = int(j)
 
     df.to_excel(excel_path.replace('.xlsx', '_bis.xlsx'))
 
