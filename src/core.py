@@ -611,12 +611,13 @@ def get_mean_tracts_study(root: str, selected_edges_path: str,
             try:
                 trk_file = (tract_path + sub + '_tractogram_sift_'
                             + str(edge[0]) + '_' + str(edge[1])+'.trk')
+
+                mean_dic, dev_dic = get_mean_tracts(trk_file, micro_path)
+
             except FileNotFoundError:
                 print('.trk file not found for edge ' + str(edge)+' in patient '
                       + sub)
                 continue
-
-            mean_dic, dev_dic = get_mean_tracts(trk_file, micro_path)
 
             dic_tot['Mean'][sub][str(edge)] = mean_dic
             dic_tot['Dev'][sub][str(edge)] = dev_dic
