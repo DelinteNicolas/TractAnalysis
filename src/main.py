@@ -67,12 +67,12 @@ if __name__ == '__main__':
     # print('Computing mean connectivity')
     # get_mean_connectivity(subjects_list, root, output_analysis_path)
 
-    # print('Finding most relevant connectivity edges')
-    # edge = get_edges_of_interest(pval_file, output_path=output_analysis_path,
-    #                              min_path=min_path)
+    print('Finding most relevant connectivity edges')
+    get_edges_of_interest(pval_file, output_path=output_analysis_path,
+                          min_path=min_path)
 
-    # print('Launching jobs to extract tract of interest')
-    # slurm_iter(root, 'extraction')  # , patient_list=['sub01_E1'])
+    print('Launching jobs to extract tract of interest')
+    slurm_iter(root, 'extraction')  # , patient_list=['sub01_E1'])
 
 # =============================================================================
 # Third section - Computing tract microstructure
