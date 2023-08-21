@@ -390,6 +390,7 @@ def get_edges_of_interest(pval_file: str, output_path: str,
         if edge not in edges:
             edges.append(edge)
 
+    print(len(edges))
     json.dump(edges, open(output_path + 'selected_edges.json', 'w'))
 
 
