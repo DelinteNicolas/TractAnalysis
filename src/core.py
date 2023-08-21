@@ -511,6 +511,11 @@ def get_mean_tracts(trk_file: str, micro_path: str):
     mean_dic = {}
     dev_dic = {}
 
+    # Streamline count ---------------------
+
+    mean_dic['stream_count'] = len(trk.streamlines._offsets)
+    dev_dic['stream_count'] = 0
+
     # Diamond ------------------------------
 
     tensor_files = [micro_path + 'diamond/' + subject + '_diamond_t0.nii.gz',
