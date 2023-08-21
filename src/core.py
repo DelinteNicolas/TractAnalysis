@@ -382,11 +382,15 @@ def get_edges_of_interest(pval_file: str, output_path: str,
         selec = np.argwhere(np.isin(pval, pval_cand_copy[0]))
         print('Minimum p-value used instead of multiple correction')
 
-    # First value of candidate pvalues
-    edge = tuple(selec[0][:2])
+    # First values of candidate pvalues
+    edges = []
+    for i in range(selec.shape[0]):
 
-    json.dump([edge], open(output_path + 'selected_edges.json', 'w'),
-              default=to_float64)
+        edge = (int(selec[i, 0]), int(selec[i, 1]))
+        if edge not in edges:
+            edges.append(edge)
+
+    json.dump(edges, open(output_path + 'selected_edges.json', 'w'))
 
 
 def extract_streamline(edge: tuple, labels_path: str,
