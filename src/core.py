@@ -286,19 +286,19 @@ def significance_level(list_subject: str, root: str, output_path: str):
     for i in range(list_E1.shape[0]):
         for j in range(list_E1.shape[1]):
             _, pval_12 = ttest_ind(
-                list_E1[i, j, :], list_E2[i, j, :], alternative='two-sided')
+                list_E1[i, j, :], list_E2[i, j, :])  # , alternative='two-sided')
             if np.isnan(pval_12):
                 pval_12 = 1
             pval_E12[i, j] = pval_12
 
             _, pval_13 = ttest_ind(
-                list_E1[i, j, :], list_E3[i, j, :], alternative='two-sided')
+                list_E1[i, j, :], list_E3[i, j, :])  # , alternative='two-sided')
             if np.isnan(pval_13):
                 pval_13 = 1
             pval_E13[i, j] = pval_13
 
             _, pval_23 = ttest_ind(
-                list_E2[i, j, :], list_E3[i, j, :], alternative='two-sided')
+                list_E2[i, j, :], list_E3[i, j, :])  # , alternative='two-sided')
             if np.isnan(pval_23):
                 pval_23 = 1
             pval_E23[i, j] = pval_23
@@ -461,7 +461,7 @@ def create_tensor_metrics(path: str):
 
     for tensor in ['t0', 't1']:
 
-        img = nib.load(path+'_diamond_'+tensor+'.nii.gz')
+        img = nib.load(path + '_diamond_' + tensor + '.nii.gz')
         t = img.get_fdata()
 
         FA, AD, RD, MD = tensor_to_DTI(t)
@@ -475,7 +475,7 @@ def create_tensor_metrics(path: str):
         for m in metric:
             out = nib.Nifti1Image(metric[m].real, img.affine)
             out.header.get_xyzt_units()
-            out.to_filename(path+'_diamond_'+m+'_'+tensor+'.nii.gz')
+            out.to_filename(path + '_diamond_' + m + '_' + tensor + '.nii.gz')
 
 
 def get_mean_tracts(trk_file: str, micro_path: str):
@@ -509,8 +509,8 @@ def get_mean_tracts(trk_file: str, micro_path: str):
 
     # Diamond ------------------------------
 
-    tensor_files = [micro_path+'diamond/'+subject+'_diamond_t0.nii.gz',
-                    micro_path+'diamond/'+subject+'_diamond_t1.nii.gz']
+    tensor_files = [micro_path + 'diamond/' + subject + '_diamond_t0.nii.gz',
+                    micro_path + 'diamond/' + subject + '_diamond_t1.nii.gz']
 
     tList = [tensor_to_peak(nib.load(tensor_files[0]).get_fdata()),
              tensor_to_peak(nib.load(tensor_files[1]).get_fdata())]
@@ -519,15 +519,15 @@ def get_mean_tracts(trk_file: str, micro_path: str):
 
     metric_list = ['FA', 'MD', 'RD', 'AD']
 
-    if not os.path.isfile(micro_path+'diamond/'+subject
+    if not os.path.isfile(micro_path + 'diamond/' + subject
                           + '_diamond_FA_t0.nii.gz'):
 
-        create_tensor_metrics(micro_path+'diamond/'+subject)
+        create_tensor_metrics(micro_path + 'diamond/' + subject)
 
     for m in metric_list:
 
-        map_files = [micro_path+'diamond/'+subject+'_diamond_'+m+'_t0.nii.gz',
-                     micro_path+'diamond/'+subject+'_diamond_'+m+'_t1.nii.gz']
+        map_files = [micro_path + 'diamond/' + subject + '_diamond_' + m + '_t0.nii.gz',
+                     micro_path + 'diamond/' + subject + '_diamond_' + m + '_t1.nii.gz']
 
         metricMapList = [nib.load(map_files[0]).get_fdata(),
                          nib.load(map_files[1]).get_fdata()]
@@ -541,8 +541,8 @@ def get_mean_tracts(trk_file: str, micro_path: str):
 
     # Microstructure fingerprinting --------
 
-    tensor_files = [micro_path+'mf/'+subject+'_mf_peak_f0.nii.gz',
-                    micro_path+'mf/'+subject+'_mf_peak_f1.nii.gz']
+    tensor_files = [micro_path + 'mf/' + subject + '_mf_peak_f0.nii.gz',
+                    micro_path + 'mf/' + subject + '_mf_peak_f1.nii.gz']
 
     tList = [nib.load(tensor_files[0]).get_fdata(),
              nib.load(tensor_files[1]).get_fdata()]
@@ -553,8 +553,8 @@ def get_mean_tracts(trk_file: str, micro_path: str):
 
     for m in metric_list:
 
-        map_files = [micro_path+'mf/'+subject+'_mf_'+m+'_f0.nii.gz',
-                     micro_path+'mf/'+subject+'_mf_'+m+'_f1.nii.gz']
+        map_files = [micro_path + 'mf/' + subject + '_mf_' + m + '_f0.nii.gz',
+                     micro_path + 'mf/' + subject + '_mf_' + m + '_f1.nii.gz']
 
         metricMapList = [nib.load(map_files[0]).get_fdata(),
                          nib.load(map_files[1]).get_fdata()]
@@ -600,8 +600,8 @@ def get_mean_tracts_study(root: str, selected_edges_path: str,
 
     for sub in subj_list:
 
-        micro_path = root+'subjects/'+sub+'/dMRI/microstructure/'
-        tract_path = root+'subjects/'+sub+'/dMRI/tractography/tois/'
+        micro_path = root + 'subjects/' + sub + '/dMRI/microstructure/'
+        tract_path = root + 'subjects/' + sub + '/dMRI/tractography/tois/'
 
         dic_tot['Mean'][sub] = {}
         dic_tot['Dev'][sub] = {}
@@ -610,22 +610,22 @@ def get_mean_tracts_study(root: str, selected_edges_path: str,
 
             try:
                 trk_file = (tract_path + sub + '_tractogram_sift_'
-                            + str(edge[0]) + '_' + str(edge[1])+'.trk')
+                            + str(edge[0]) + '_' + str(edge[1]) + '.trk')
 
                 mean_dic, dev_dic = get_mean_tracts(trk_file, micro_path)
 
             except FileNotFoundError:
-                print('.trk file not found for edge ' + str(edge)+' in patient '
+                print('.trk file not found for edge ' + str(edge) + ' in patient '
                       + sub)
                 continue
             except IndexError:
-                print('IndexError with subject '+sub)
+                print('IndexError with subject ' + sub)
                 continue
 
             dic_tot['Mean'][sub][str(edge)] = mean_dic
             dic_tot['Dev'][sub][str(edge)] = dev_dic
 
-    json.dump(dic_tot, open(output_path+'unravel_means.json', 'w'),
+    json.dump(dic_tot, open(output_path + 'unravel_means.json', 'w'),
               default=to_float64)
 
 
