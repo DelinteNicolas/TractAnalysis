@@ -379,14 +379,18 @@ def get_edges_of_interest(pval_file: str, output_path: str,
     if len(selec) < 5:
 
         # Temporary candidate ------------------------------
-        selec = np.argwhere(np.isin(pval, pval_cand_copy[0]))
-        print('Minimum p-value used instead of multiple correction')
+        selec = np.argwhere(np.isin(pval, pval_cand_copy[:10]))
+        print('Minimum p-values used instead of multiple correction')
 
-    # First value of candidate pvalues
-    edge = tuple(selec[0][:2])
+    # First values of candidate pvalues
+    edges = []
+    for i in range(selec.shape[0]):
 
-    json.dump([edge], open(output_path + 'selected_edges.json', 'w'),
-              default=to_float64)
+        edge = (int(selec[i, 0]), int(selec[i, 1]))
+        if edge not in edges:
+            edges.append(edge)
+
+    json.dump(edges, open(output_path + 'selected_edges.json', 'w'))
 
 
 def extract_streamline(edge: tuple, labels_path: str,
@@ -507,6 +511,11 @@ def get_mean_tracts(trk_file: str, micro_path: str):
     mean_dic = {}
     dev_dic = {}
 
+    # Streamline count ---------------------
+
+    mean_dic['stream_count'] = len(trk.streamlines._offsets)
+    dev_dic['stream_count'] = 0
+
     # Diamond ------------------------------
 
     tensor_files = [micro_path + 'diamond/' + subject + '_diamond_t0.nii.gz',
@@ -625,7 +634,7 @@ def get_mean_tracts_study(root: str, selected_edges_path: str,
             dic_tot['Mean'][sub][str(edge)] = mean_dic
             dic_tot['Dev'][sub][str(edge)] = dev_dic
 
-    json.dump(dic_tot, open(output_path + 'unravel_means.json', 'w'),
+    json.dump(dic_tot, open(output_path + 'unravel_metric_analysis.json', 'w'),
               default=to_float64)
 
 
