@@ -379,7 +379,7 @@ def get_edges_of_interest(pval_file: str, output_path: str,
     if len(selec) < 5:
 
         # Temporary candidate ------------------------------
-        selec = np.argwhere(np.isin(pval, pval_cand_copy[:5]))
+        selec = np.argwhere(np.isin(pval, pval_cand_copy[:10]))
         print('Minimum p-values used instead of multiple correction')
 
     # First values of candidate pvalues
@@ -629,7 +629,7 @@ def get_mean_tracts_study(root: str, selected_edges_path: str,
             dic_tot['Mean'][sub][str(edge)] = mean_dic
             dic_tot['Dev'][sub][str(edge)] = dev_dic
 
-    json.dump(dic_tot, open(output_path + 'unravel_means.json', 'w'),
+    json.dump(dic_tot, open(output_path + 'unravel_metric_analysis.json', 'w'),
               default=to_float64)
 
 
