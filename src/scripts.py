@@ -51,7 +51,8 @@ elif code == 'extraction':
     with open(output_analysis_path + 'selected_edges.json', "r") as file:
         edges = json.load(file)
 
-    extract_streamline(edges[0], labels_path, streamlines_path, excel_path)
+    for edge in edges:
+        extract_streamline(edge, labels_path, streamlines_path, excel_path)
 
 elif code == 'estimation':
 
