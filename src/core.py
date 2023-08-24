@@ -75,6 +75,39 @@ def register_atlas_to_subj(fa_path: str, label_path: str, mni_fa_path: str,
                     output_path=output_path, labels=True)
 
 
+def get_wMetrics(root: str, patient: str):
+    '''
+    Creation of files containing the wFA, wMD, wAD and wRD for each patient. "w" stands for weigthed.
+
+    Parameters
+    ----------
+    root : string 
+        Link of the file in which we are. 
+    patient : string
+        Name of the patient.
+
+    Returns
+    -------
+    None.
+    '''
+
+    metrics = ["FA", "MD", "AD", "RD"]
+
+    for metric in metrics:
+        metric_t0 = root + "/subjects/" + patient + "/dMRI/microstructure/diamond/" + patient + "_diamond_" + metric + "_t0.nii.gz"
+
+        metric_t1 = root + "/subjects/" + patient + "/dMRI/microstructure/diamond/" + patient + "_diamond_" + metric + "_t1.nii.gz"
+
+        fraction_t0 = root + "/subjects/" + patient + "/dMRI/microstructure/diamond/" + patient + "_diamond_fractions_f0.nii.gz"
+
+        fraction_t1 = root + "/subjects/" + patient + "/dMRI/microstructure/diamond/" + patient + "_diamond_fractions_f1.nii.gz"
+
+        cMetric = (nib.load(metric_t0).get_fdata() * nib.load(fraction_t0).get_fdata() + nib.load(metric_t1).get_fdata() * nib.load(fraction_t1).get_fdata()) / (nib.load(fraction_t1).get_fdata() + nib.load(fraction_t0).get_fdata())
+
+        out = nib.Nifti1Image(cMetric, affine=nib.load(metric_t0).affine, header=nib.load(metric_t0).header)
+        out.to_filename(root + "/subjects/" + patient + "/dMRI/microstructure/diamond/" + patient + "diamond_w" + metric + ".nii.gz")
+
+
 def check_wanted(unwanted_keyword_list: list, long_name: str) -> bool:
     '''
 
@@ -286,19 +319,19 @@ def significance_level(list_subject: str, root: str, output_path: str):
     for i in range(list_E1.shape[0]):
         for j in range(list_E1.shape[1]):
             _, pval_12 = ttest_ind(
-                list_E1[i, j, :], list_E2[i, j, :])  # , alternative='two-sided')
+                list_E1[i, j, :], list_E2[i, j, :], alternative='two-sided')
             if np.isnan(pval_12):
                 pval_12 = 1
             pval_E12[i, j] = pval_12
 
             _, pval_13 = ttest_ind(
-                list_E1[i, j, :], list_E3[i, j, :])  # , alternative='two-sided')
+                list_E1[i, j, :], list_E3[i, j, :], alternative='two-sided')
             if np.isnan(pval_13):
                 pval_13 = 1
             pval_E13[i, j] = pval_13
 
             _, pval_23 = ttest_ind(
-                list_E2[i, j, :], list_E3[i, j, :])  # , alternative='two-sided')
+                list_E2[i, j, :], list_E3[i, j, :], alternative='two-sided')
             if np.isnan(pval_23):
                 pval_23 = 1
             pval_E23[i, j] = pval_23
@@ -379,18 +412,14 @@ def get_edges_of_interest(pval_file: str, output_path: str,
     if len(selec) < 5:
 
         # Temporary candidate ------------------------------
-        selec = np.argwhere(np.isin(pval, pval_cand_copy[:10]))
-        print('Minimum p-values used instead of multiple correction')
+        selec = np.argwhere(np.isin(pval, pval_cand_copy[0]))
+        print('Minimum p-value used instead of multiple correction')
 
-    # First values of candidate pvalues
-    edges = []
-    for i in range(selec.shape[0]):
+    # First value of candidate pvalues
+    edge = tuple(selec[0][:2])
 
-        edge = (int(selec[i, 0]), int(selec[i, 1]))
-        if edge not in edges:
-            edges.append(edge)
-
-    json.dump(edges, open(output_path + 'selected_edges.json', 'w'))
+    json.dump([edge], open(output_path + 'selected_edges.json', 'w'),
+              default=to_float64)
 
 
 def extract_streamline(edge: tuple, labels_path: str,
@@ -511,11 +540,6 @@ def get_mean_tracts(trk_file: str, micro_path: str):
     mean_dic = {}
     dev_dic = {}
 
-    # Streamline count ---------------------
-
-    mean_dic['stream_count'] = len(trk.streamlines._offsets)
-    dev_dic['stream_count'] = 0
-
     # Diamond ------------------------------
 
     tensor_files = [micro_path + 'diamond/' + subject + '_diamond_t0.nii.gz',
@@ -634,7 +658,7 @@ def get_mean_tracts_study(root: str, selected_edges_path: str,
             dic_tot['Mean'][sub][str(edge)] = mean_dic
             dic_tot['Dev'][sub][str(edge)] = dev_dic
 
-    json.dump(dic_tot, open(output_path + 'unravel_metric_analysis.json', 'w'),
+    json.dump(dic_tot, open(output_path + 'unravel_means.json', 'w'),
               default=to_float64)
 
 

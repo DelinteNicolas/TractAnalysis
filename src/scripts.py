@@ -20,7 +20,7 @@ mni_fa_path = path_to_analysis_code + 'data/FSL_HCP1065_FA_1mm.nii.gz'
 labels_path = (root + 'subjects/' + patient + '/masks/' + patient
                + '_labels.nii.gz')
 output_analysis_path = path_to_analysis_code + 'output_analysis/'
-label_atlas_path = output_analysis_path+'atlas_desikan_killiany_mni.nii.gz'
+label_atlas_path = output_analysis_path + 'atlas_desikan_killiany_mni.nii.gz'
 dwi_path = (root + 'subjects/' + patient + '/dMRI/preproc/' + patient
             + '_dmri_preproc.nii.gz')
 static_mask_path = (root + 'subjects/' + patient + '/masks/' + patient
@@ -32,7 +32,7 @@ streamlines_path = (root + 'subjects/' + patient + '/dMRI/tractography/'
 subjects_list = root + 'subjects/subj_list.json'
 freeSurfer_labels = path_to_analysis_code + 'data/FreeSurfer_labels.xlsx'
 excel_path = freeSurfer_labels.replace('.', '_bis.')
-selected_edges_path = output_analysis_path+'selected_edges.json'
+selected_edges_path = output_analysis_path + 'selected_edges.json'
 
 # Scripts and functions
 
