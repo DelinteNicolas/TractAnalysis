@@ -1,6 +1,6 @@
 import json
 from utils import (print_views_from_study_folder, get_mean_connectivity,
-                   check_labels, labels_matching, metrics_analysis)
+                   check_labels, labels_matching, metrics_analysis, graphs_analysis)
 from core import (slurm_iter, significance_level, get_edges_of_interest,
                   register_labels_to_atlas, get_mean_tracts_study)
 
@@ -28,6 +28,8 @@ if __name__ == '__main__':
     connectivity_matrix_index_file = (root + 'subjects/' + 'sub01_E1'
                                       + '/dMRI/tractography/' + 'sub01_E1'
                                       + '_labels_connectivity_matrix_sift.txt')
+
+    control_list = root + 'subjects/control_list.json'
 
     patient_list = ["sub01_E1", "sub01_E2", "sub02_E1", "sub02_E2", "sub02_E3",
                     "sub03_E2", "sub03_E3", "sub04_E1", "sub04_E2", "sub05_E1",
@@ -100,8 +102,6 @@ if __name__ == '__main__':
     # edge = get_edges_of_interest(pval_file, output_path=output_analysis_path,
     #                              min_path=min_path)
 
-    metrics_analysis(patient_list, root, output_analysis_path, metric_name, selected_edges_path)
-
     # print('Launching jobs to extract tract of interest')
     # slurm_iter(root, 'extraction')  # , patient_list=['sub01_E1'])
 
@@ -111,3 +111,9 @@ if __name__ == '__main__':
 
     # print('Estimating mean tract microscture metrics')
     # slurm_iter(root, 'estimation', patient_list=['Third_section'])
+
+    # print('Dictionary of the ROI analysis for the selected edges')
+    # path_json = metrics_analysis(patient_list, root, output_analysis_path, metric_name, selected_edges_path)
+
+    # print('Graph analysis for a specific dictionary, a specific region and a specific metric')
+    # graphs_analysis(path_json, True, '62_54', control_list, dic='Mean', metric='AD')

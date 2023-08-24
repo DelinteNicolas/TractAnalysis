@@ -250,6 +250,8 @@ def metrics_analysis(list_subjects: list, root: str, output_path: str, metric_na
     json.dump(dataframe, open(output_path + 'essai_metric_analysis.json', 'w'),
               default=to_float64)
 
+    return output_path + 'essai_metric_analysis.json'
+
 def labels_matching(excel_path, connectivity_matrix_index_file):
 
     with open(connectivity_matrix_index_file, 'r') as f:
