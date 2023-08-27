@@ -373,7 +373,7 @@ def list_nom_patient(dataframe, control_list):
     return name_patients, name_controls
 
 
-def difference_temps(dataframe, control_list, dic_val):
+def difference_temps(dataframe, control_list, dic_val, patients):
 
     name_patients, name_controls = list_nom_patient(dataframe, control_list)
     name_all = np.append(name_patients, name_controls)
@@ -405,86 +405,68 @@ def difference_temps(dataframe, control_list, dic_val):
     temps_dataframe = temps_dataframe.sort_values(by='Patient', ascending=True)
 
     temps_dataframe['Diff E2-E1'] = np.array(temps_dataframe.loc[:, 'E2']) - np.array(temps_dataframe.loc[:, 'E1'])
-    temps_dataframe['Diff E3-E1'] = np.array(temps_dataframe.loc[:, 'E3']) - np.array(temps_dataframe.loc[:, 'E1'])
-    temps_dataframe['Diff E3-E2'] = np.array(temps_dataframe.loc[:, 'E3']) - np.array(temps_dataframe.loc[:, 'E2'])
+    if patients:
+        temps_dataframe['Diff E3-E1'] = np.array(temps_dataframe.loc[:, 'E3']) - np.array(temps_dataframe.loc[:, 'E1'])
+        temps_dataframe['Diff E3-E2'] = np.array(temps_dataframe.loc[:, 'E3']) - np.array(temps_dataframe.loc[:, 'E2'])
 
     return temps_dataframe
 
 
-def graphs_analysis(path_json, specific, region, control_list, dic=None, metric=None):
+def graphs_analysis(dataframe, region, dic, metric, temps_list):
 
-    data = jsonToPandas(path_json)
-    data_value = np.array(data)
-    new_data_value = data_value
+    from statannot import add_stat_annotation
 
-    indexes = list(data.index)
-    for i, j in enumerate(indexes):
-        indexes[i] = np.array(j)
-    indexes = np.array(indexes)
+    dataframe = dataframe.loc[dic, :, region, metric]
+    dataframe = dataframe.sort_values(by='Patient', ascending=True)
 
-    new_indexes = indexes
-    list_subj = new_indexes[:, 1]
+    fig, ax = plt.subplots()
+    ax = sns.violinplot(data=dataframe, order=temps_list, palette=sns.color_palette('pastel'))
+    sns.stripplot(data=dataframe, jitter=True, order=temps_list, palette=sns.color_palette(), ax=ax)
+    ax.set_ylabel(metric)
+    ax.set_title(metric + ' values of all patient for the edge ' + region)
 
-    for i in range(len(list_subj) - 1, -1, -1):
-        if list_subj[i] in control_list:
-            new_data_value = np.delete(new_data_value, i, axis=0)
-            new_indexes = np.delete(new_indexes, i, axis=0)
-
-    dataframe = {}
-    for i in range(len(new_data_value)):
-        dataframe[str(new_indexes[i, 0]), str(new_indexes[i, 1]), str(new_indexes[i, 2]), str(new_indexes[i, 3])] = new_data_value[i][0]
-    dataframe2 = pd.DataFrame(dataframe, index=['Value']).T
-    dataframe2 = dataframe2.rename_axis(['Dic', 'Patient', 'Region', 'Metric'])
-    dataframe2 = dataframe2.sort_values(by='Dic', ascending=False)
-
-    temps_list = list(dataframe2.index.unique(1))
-    for i, j in enumerate(temps_list):
-        if "E1" in j and j not in control_list:
-            temps_list[i] = "E1"
-        elif "E2" in j and j not in control_list:
-            temps_list[i] = "E2"
-        elif "E3" in j and j not in control_list:
-            temps_list[i] = "E3"
-
-    if specific:
-        assert dic != None, 'To compute the graphs, the dic variable must have a value set to something other than None'
-        assert metric != None, 'To compute the graphs, the metric variable must have a value set to something other than None'
-
-        df = pd.DataFrame({'Temps': temps_list, 'Value': np.squeeze(dataframe2.loc[dic, :, region, metric])})
-
-        fig = plt.figure()
-        ax = sns.violinplot(x='Temps', y='Value', data=df, order=['E1', 'E2', 'E3'])
-        sns.stripplot(x="Temps", y="Value", data=df, jitter=True, order=['E1', 'E2', 'E3'], color='w')
-        plt.ylabel(metric)
-        plt.title(metric + ' values of all patient for the edge ' + region)
-
+    if len(temps_list) == 3:
         pairs = [('E1', 'E2'), ('E1', 'E3'), ('E3', 'E2')]
-        annotator = Annotator(ax, pairs, data=df, x='Temps', y='Value', order=['E1', 'E2', 'E3'])
-        annotator.configure(test="t-test_ind", text_format='simple', loc='inside')
-        a = annotator.apply_and_annotate()
-        plt.tight_layout()
-        plt.show()
-
+        nums = [0, 1, 2]
     else:
-        pval = {}
+        pairs = [('E1', 'E2')]
+        nums = [0, 1]
 
-        for dic_val in list(dataframe2.index.unique(0)):
-            for region_val in list(dataframe2.index.unique(2)):
-                for metric_val in list(dataframe2.index.unique(3)):
-                    df = pd.DataFrame({'Temps': temps_list, 'Value': np.squeeze(dataframe2.loc[dic_val, :, region_val, metric_val])})
+    a = add_stat_annotation(ax, data=dataframe, order=temps_list,
+                            box_pairs=pairs,
+                            test='t-test_ind', text_format='star', verbose=2)
 
-                    fig = plt.figure()
-                    ax = sns.violinplot(x='Temps', y='Value', data=df, order=['E1', 'E2', 'E3'])
-                    plt.ylabel(metric)
-                    plt.title(dic_val + ' ' + metric_val + ' values of all patient for the edge ' + region_val)
+    maximal_val = np.max(np.max(dataframe)) + 0.5 * (np.max(np.max(dataframe)) - np.min(np.min(dataframe)))
+    minimal_val = np.min(np.min(dataframe)) - 0.5 * (np.max(np.max(dataframe)) - np.min(np.min(dataframe)))
 
-                    pairs = [('E1', 'E2'), ('E2', 'E3'), ('E1', 'E3')]
-                    annotator = Annotator(ax, pairs, data=df, x='Temps', y='Value', order=['E1', 'E2', 'E3'])
-                    annotator.configure(test="t-test_welch", text_format='simple', loc='inside')
-                    a = annotator.apply_and_annotate()
+    ax.set_xticks(nums)
+    ax.set_xlim(nums[0] - 0.5, nums[-1] + 0.5)
+    ax.set_ylim(minimal_val, maximal_val)
+    plt.tight_layout()
+    plt.show()
 
-                    pval[dic_val, region_val, metric_val] = np.array([a[1][0].data.pvalue, a[1][1].data.pvalue, a[1][2].data.pvalue])
+    return a
 
-        pval_dataframe = pd.DataFrame(pval, index=['E1-E2', 'E2-E3', 'E1-E3']).T
-        pval_dataframe = pval_dataframe.rename_axis(['Dic', 'Region', 'Metric'])
-        pval_dataframe = pval_dataframe.sort_values(by='Dic', ascending=False)
+
+# if __name__ == '__main__':
+
+#     path_json = 'C:/Users/dausort/Downloads/essai_metric_analysis.json'
+#     control_path = 'E:/dausort/DOCTORAT/Alcool/control_list.json'
+
+#     with open(control_path, 'r') as read_file:
+#         control_list = json.load(read_file)
+
+#     list_temps = ['E1', 'E2', 'E3']
+#     list_temps_control = ['E1', 'E2']
+
+#     dataframe_without_control = dictionary_without_controls(path_json, control_list)
+#     df_without_control = difference_temps(dataframe_without_control, control_list, 'Mean', True)
+#     df_without_control = df_without_control[list_temps]
+
+#     a = graphs_analysis(df_without_control, '62_54', 'Mean', 'AD', list_temps)
+
+#     dataframe_control = dictionary_controls(path_json, control_list)
+#     df_control = difference_temps(dataframe_control, control_list, 'Mean', False)
+#     df_control = df_control[list_temps_control]
+
+#     a = graphs_analysis(df_control, '62_54', 'Mean', 'AD', list_temps_control)

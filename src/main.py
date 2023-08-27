@@ -57,7 +57,7 @@ if __name__ == '__main__':
                     "sub59_E1", "sub59_E2", "sub60_E1", "sub60_E2", "sub61_E1",
                     "sub61_E2", "sub62_E1", "sub62_E2", "sub63_E1", "sub63_E2",
                     "sub64_E1", "sub64_E2", "sub65_E1", "sub65_E2", "sub66_E1",
-                    "sub66_E2", "sub67_E2", "sub68_E1", "sub68_E2",
+                    "sub66_E2", "sub67_E1", "sub67_E2", "sub68_E1", "sub68_E2",
                     "sub69_E1", "sub69_E2", "sub70_E1", "sub70_E2", "sub71_E1",
                     "sub71_E2", "sub72_E1", "sub72_E2", "sub73_E1", "sub73_E2"]
 
@@ -112,8 +112,8 @@ if __name__ == '__main__':
     # print('Estimating mean tract microscture metrics')
     # slurm_iter(root, 'estimation', patient_list=['Third_section'])
 
-    # print('Dictionary of the ROI analysis for the selected edges')
-    # path_json = metrics_analysis(patient_list, root, output_analysis_path, metric_name, selected_edges_path)
+    print('Dictionary of the ROI analysis for the selected edges')
+    path_json = metrics_analysis(patient_list, root, output_analysis_path, metric_name, selected_edges_path)
 
     # print('Graph analysis for a specific dictionary, a specific region and a specific metric')
     # graphs_analysis(path_json, True, '62_54', control_list, dic='Mean', metric='AD')
