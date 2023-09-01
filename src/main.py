@@ -1,7 +1,8 @@
 import json
 import os
 from utils import (print_views_from_study_folder, get_mean_connectivity,
-                   check_labels, labels_matching)
+                   check_labels, labels_matching, metrics_analysis,
+                   graphs_analysis)
 from core import (slurm_iter, significance_level, get_edges_of_interest,
                   register_labels_to_atlas, get_mean_tracts_study)
 
@@ -14,7 +15,8 @@ if __name__ == '__main__':
     path_to_analysis_code = (root.replace(root.split('/')[-2] + '/', '')
                              + 'TractAnalysis/')
 
-    subjects_list = root + 'subjects/subj_list.json'
+    subjects_list_path = root + 'subjects/subj_list.json'
+    control_list_path = root + 'subjects/control_list.json'
 
     if not os.path.exists(path_to_analysis_code + 'output_analysis/'):
         os.mkdir(path_to_analysis_code + 'output_analysis/')
@@ -28,12 +30,23 @@ if __name__ == '__main__':
     freeSurfer_labels = path_to_analysis_code + 'data/FreeSurfer_labels.xlsx'
     selected_edges_path = output_analysis_path + 'selected_edges.json'
 
-    with open(subjects_list, 'r') as read_file:
+    with open(subjects_list_path, 'r') as read_file:
         list_subjects = json.load(read_file)
+
+    with open(control_list_path, 'r') as read_file:
+        list_control = json.load(read_file)
+
+    patient_list = list(set(list_subjects) - set(list_control))
 
     connectivity_matrix_index_file = (root + 'subjects/' + 'sub01_E1'
                                       + '/dMRI/tractography/' + 'sub01_E1'
                                       + '_labels_connectivity_matrix_sift.txt')
+
+    metric_name = ['FA', 'AD', 'RD', 'MD', 'noddi_fintra', 'noddi_fextra',
+                   'noddi_fiso', 'noddi_odi', 'diamond_wFA', 'diamond_wMD',
+                   'diamond_wRD', 'diamond_wAD', 'diamond_fractions_csf',
+                   'diamond_fractions_ftot', 'mf_frac_ftot', 'mf_wfvf',
+                   'mf_frac_csf', 'mf_fvf_tot']
 
 # =============================================================================
 # First section - Connectivity
@@ -62,10 +75,10 @@ if __name__ == '__main__':
     # labels_matching(freeSurfer_labels, connectivity_matrix_index_file)
 
     # print('Computing p-values of connectivity matrices')
-    # significance_level(subjects_list, root, output_analysis_path)
+    # significance_level(subjects_list_path, root, output_analysis_path)
 
     # print('Computing mean connectivity')
-    # get_mean_connectivity(subjects_list, root, output_analysis_path)
+    # get_mean_connectivity(subjects_list_path, root, output_analysis_path)
 
     print('Finding most relevant connectivity edges')
     get_edges_of_interest(pval_file, output_path=output_analysis_path,
@@ -80,3 +93,12 @@ if __name__ == '__main__':
 
     # print('Estimating mean tract microscture metrics')
     # slurm_iter(root, 'estimation', patient_list=['Third_section'])
+
+    print('Dictionary of the ROI analysis for the selected edges')
+    path_json = metrics_analysis(patient_list, root, output_analysis_path,
+                                 metric_name, selected_edges_path)
+
+    # print('Graph analysis for a specific dictionary, a specific region and a '
+    # + 'specific metric')
+    # graphs_analysis(path_json, True, '62_54', control_list_path, dic='Mean',
+    # metric='AD')

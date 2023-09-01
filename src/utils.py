@@ -1,12 +1,20 @@
 import os
 import json
-import string
 import pandas as pd
 import numpy as np
-import xlsxwriter
 import nibabel as nib
 from unravel.utils import tract_to_ROI
 import matplotlib.pyplot as plt
+import seaborn as sns
+from statannot import add_stat_annotation
+
+
+def to_float64(val):
+    """
+    Used if *val* is an instance of numpy.float32.
+    """
+
+    return np.float64(val)
 
 
 def get_view_from_data(data_path: str):
@@ -188,100 +196,67 @@ def check_labels(list_subjects: str, root: str, output_path: str):
 def metrics_analysis(list_subjects: list, root: str, output_path: str,
                      metric_name: list, edge_name: str):
 
-    workbook = xlsxwriter.Workbook(output_path + 'metrics_analysis.xlsx')
+    with open(edge_name, 'r') as read_file:
+        edge_name = json.load(read_file)
 
-    alphabet = list(string.ascii_uppercase)[1:len(metric_name)]
+    print(edge_name)
 
-    for i in range(len(edge_name)):
+    dataframe = {}
 
-        worksheet = workbook.add_worksheet(str(edge_name))
-        worksheet.write('A1', 'Subjects \ Metrics')
+    dataframe['Mean'] = {}
+    dataframe['Dev'] = {}
 
-        for j in range(len(list_subjects)):
+    for j, sub in enumerate(list_subjects):
 
-            worksheet.write('A' + str(2 + j), str(list_subjects[j]))
+        dataframe['Mean'][sub] = {}
+        dataframe['Dev'][sub] = {}
 
-            ROI = tract_to_ROI(
-                root + '/subjects/' + list_subjects[j] + '/dMRI/tractography/'
-                + list_subjects[j] + '_' + edge_name[i] + '.trk')
+        for i, r in enumerate(edge_name):
 
-            for k in range(len(metric_name)):
+            dataframe['Mean'][sub][str(r[0]) + '_' + str(r[1])] = {}
+            dataframe['Dev'][sub][str(r[0]) + '_' + str(r[1])] = {}
 
-                worksheet.write(str(alphabet[k]) + str(1), metric_name[k])
+            ROI = tract_to_ROI(root + '/subjects/' + sub
+                               + '/dMRI/tractography/tois/' + sub
+                               + '_tractogram_sift_' + str(r[0]) + '_'
+                               + str(r[1]) + '.trk')
 
-                if metric_name[k] in ['FA', 'MD', 'RD', 'AD']:
+            for k, m in enumerate(metric_name):
+
+                if m in ['FA', 'MD', 'RD', 'AD']:
                     model = 'dti'
-                elif metric_name[k] in ['fintra', 'fextra', 'fiso', 'odi']:
+                elif m in ['noddi_fintra', 'noddi_fextra', 'noddi_fiso',
+                           'noddi_odi']:
                     model = 'noddi'
-                elif metric_name[k] in ['wFA', 'wMD', 'wRD', 'wAD',
-                                        'diamond_fractions_ftot',
-                                        'diamond_fractions_csf']:
+                elif m in ['diamond_wFA', 'diamond_wMD', 'diamond_wRD',
+                           'diamond_wAD', 'diamond_fractions_ftot',
+                           'diamond_fractions_csf']:
                     model = 'diamond'
                 else:
                     model = 'mf'
 
-                metric_map = nib.load(root + '/subjects/' + list_subjects[j]
+                metric_map = nib.load(root + '/subjects/' + sub
                                       + '/dMRI/microstructure/' + model + '/'
-                                      + list_subjects[j] + '_' + metric_name[k]
-                                      + '.nii.gz').get_fdata()
+                                      + sub + '_' + m + '.nii.gz').get_fdata()
 
                 metric_in_ROI = metric_map[ROI != 0]
 
                 mean_ROI = np.mean(metric_in_ROI[metric_in_ROI != 0])
+                std_ROI = np.std(metric_in_ROI[metric_in_ROI != 0])
 
-                worksheet.write(str(alphabet[k]) + str(2 + j), mean_ROI)
+                if np.isnan(mean_ROI):
+                    mean_ROI = 0
+                if np.isnan(std_ROI):
+                    std_ROI = 0
 
+                dataframe['Mean'][sub][str(
+                    r[0]) + '_' + str(r[1])][m] = mean_ROI
+                dataframe['Dev'][sub][str(r[0]) + '_' + str(r[1])][m] = std_ROI
 
-def mean_metrics_analysis(list_subjects: list, root: str, output_path: str,
-                          metric_name: list, edge_name: str):
+    json.dump(dataframe, open(output_path + 'essai_metric_analysis.json', 'w'),
+              default=to_float64)
 
-    workbook = xlsxwriter.Workbook(output_path + 'mean_metrics_analysis.xlsx')
-    worksheet = workbook.add_worksheet()
-    worksheet.write('A1', 'Area \ Metrics')
-
-    alphabet = list(string.ascii_uppercase)[1:len(metric_name)]
-
-    for i in range(len(edge_name)):
-
-        worksheet.write('A' + str(2 + i), str(edge_name[i]))
-
-        for j in range(len(metric_name)):
-
-            worksheet.write(str(alphabet[j]) + str(1), metric_name[j])
-
-            mean_list = []
-
-            for k in range(len(list_subjects)):
-
-                ROI = tract_to_ROI(root + '/subjects/' + list_subjects[k]
-                                   + '/dMRI/tractography/' + list_subjects[k]
-                                   + '_' + edge_name[i] + '.trk')
-
-                if metric_name[j] in ['FA', 'MD', 'RD', 'AD']:
-                    model = 'dti'
-                elif metric_name[j] in ['fintra', 'fextra', 'fiso', 'odi']:
-                    model = 'noddi'
-                elif metric_name[j] in ['wFA', 'wMD', 'wRD', 'wAD',
-                                        'diamond_fractions_ftot',
-                                        'diamond_fractions_csf']:
-                    model = 'diamond'
-                else:
-                    model = 'mf'
-
-                metric_map = nib.load(root + '/subjects/' + list_subjects[k]
-                                      + '/dMRI/microstructure/' + model + '/'
-                                      + list_subjects[k] + '_' + metric_name[j]
-                                      + '.nii.gz').get_fdata()
-
-                metric_in_ROI = metric_map[ROI != 0]
-
-                mean_ROI = np.mean(metric_in_ROI[metric_in_ROI != 0])
-
-                mean_list.append(mean_ROI)
-
-            mean_sub = np.mean(mean_list)
-
-            worksheet.write(str(alphabet[j]) + str(2 + i), mean_ROI)
+    return output_path + 'essai_metric_analysis.json'
 
 
 def labels_matching(excel_path, connectivity_matrix_index_file):
@@ -299,10 +274,219 @@ def labels_matching(excel_path, connectivity_matrix_index_file):
     df.to_excel(excel_path.replace('.xlsx', '_bis.xlsx'))
 
 
-def data_to_json(excel_path: str):
+def jsonToPandas(jsonFilePath: str):
 
-    df = pd.read_excel(excel_path)
+    import pandas as pd
 
-    json_path = excel_path.replace('.xlsx', '.json')
+    file = open(jsonFilePath)
+    dic = json.load(file)
+    # dic = dic['Mean']
+    file.close()
 
-    df2 = df.to_json(json_path, orient='columns')
+    reform = {(level1_key, level2_key, level3_key, level4_key): values
+              for level1_key, level2_dict in dic.items()
+              for level2_key, level3_dict in level2_dict.items()
+              for level3_key, level4_dict in level3_dict.items()
+              for level4_key, values in level4_dict.items()}
+
+    p = pd.DataFrame(reform, index=['Value']).T
+    p = p.rename_axis(['Dic', 'Patient', 'Region', 'Metric'])
+
+    return p
+
+
+def dictionary_without_controls(path_json, control_list):
+
+    data = jsonToPandas(path_json)
+    data_value = np.array(data)
+    new_data_value = data_value
+
+    indexes = list(data.index)
+    for i, j in enumerate(indexes):
+        indexes[i] = np.array(j)
+    indexes = np.array(indexes)
+
+    new_indexes = indexes
+    list_subj = new_indexes[:, 1]
+
+    for i in range(len(list_subj) - 1, -1, -1):
+        if list_subj[i] in control_list:
+            new_data_value = np.delete(new_data_value, i, axis=0)
+            new_indexes = np.delete(new_indexes, i, axis=0)
+
+    dataframe = {}
+    for i in range(len(new_data_value)):
+        dataframe[str(new_indexes[i, 0]), str(new_indexes[i, 1]), str(
+            new_indexes[i, 2]), str(new_indexes[i, 3])] = new_data_value[i][0]
+    dataframe2 = pd.DataFrame(dataframe, index=['Value']).T
+    dataframe2 = dataframe2.rename_axis(['Dic', 'Patient', 'Region', 'Metric'])
+    dataframe2 = dataframe2.sort_values(by='Dic', ascending=False)
+
+    return dataframe2
+
+
+def dictionary_controls(path_json, control_list):
+
+    data = jsonToPandas(path_json)
+    data_value = np.array(data)
+    new_data_value = data_value
+
+    indexes = list(data.index)
+    for i, j in enumerate(indexes):
+        indexes[i] = np.array(j)
+    indexes = np.array(indexes)
+
+    new_indexes = indexes
+    list_subj = new_indexes[:, 1]
+
+    for i in range(len(list_subj) - 1, -1, -1):
+        if list_subj[i] not in control_list:
+            new_data_value = np.delete(new_data_value, i, axis=0)
+            new_indexes = np.delete(new_indexes, i, axis=0)
+
+    dataframe = {}
+
+    for i in range(len(new_data_value)):
+        dataframe[str(new_indexes[i, 0]), str(new_indexes[i, 1]), str(
+            new_indexes[i, 2]), str(new_indexes[i, 3])] = new_data_value[i][0]
+
+    dataframe2 = pd.DataFrame(dataframe, index=['Value']).T
+    dataframe2 = dataframe2.rename_axis(['Dic', 'Patient', 'Region', 'Metric'])
+    dataframe2 = dataframe2.sort_values(by='Dic', ascending=False)
+
+    return dataframe2
+
+
+def list_nom_patient(dataframe, control_list):
+
+    patients = dataframe.index.unique(1)
+    name_controls = []
+    name_patients = []
+
+    for i in patients:
+        if i in control_list:
+            i = i.replace('_E1', '')
+            i = i.replace('_E2', '')
+            i = i.replace('_E3', '')
+
+            if i not in name_controls:
+                name_controls.append(i)
+        else:
+            i = i.replace('_E1', '')
+            i = i.replace('_E2', '')
+            i = i.replace('_E3', '')
+
+            if i not in name_patients:
+                name_patients.append(i)
+
+    return name_patients, name_controls
+
+
+def difference_temps(dataframe, control_list, dic_val, patients):
+
+    name_patients, name_controls = list_nom_patient(dataframe, control_list)
+    name_all = np.append(name_patients, name_controls)
+
+    df_temps = {}
+    list_temps = []
+
+    for t in list(dataframe.index.unique(1)):
+        if t[-2:] not in list_temps:
+            list_temps.append(t[-2:])
+
+    list_temps.sort()
+
+    for region_val in list(dataframe.index.unique(2)):
+        for metric_val in list(dataframe.index.unique(3)):
+            for i in name_all:
+                inter_value = []
+                for temps in list_temps:
+                    try:
+                        inter_value.append(
+                            dataframe.loc[dic_val, i + '_' + temps, region_val,
+                                          metric_val][0])
+                    except KeyError:
+                        inter_value.append(float('nan'))
+                        continue
+
+                df_temps[dic_val, i, region_val, metric_val] = inter_value
+
+    temps_dataframe = pd.DataFrame(df_temps, index=[list_temps]).T
+    temps_dataframe = temps_dataframe.rename_axis(
+        ['Dic', 'Patient', 'Region', 'Metric'])
+    temps_dataframe = temps_dataframe.sort_values(by='Patient', ascending=True)
+
+    temps_dataframe['Diff E2-E1'] = (np.array(temps_dataframe.loc[:, 'E2'])
+                                     - np.array(temps_dataframe.loc[:, 'E1']))
+    if patients:
+        temps_dataframe['Diff E3-E1'] = (np.array(temps_dataframe.loc[:, 'E3'])
+                                         - np.array(temps_dataframe.loc[:, 'E1']))
+        temps_dataframe['Diff E3-E2'] = (np.array(temps_dataframe.loc[:, 'E3'])
+                                         - np.array(temps_dataframe.loc[:, 'E2']))
+
+    return temps_dataframe
+
+
+def graphs_analysis(dataframe, region, dic, metric, temps_list):
+
+    dataframe = dataframe.loc[dic, :, region, metric]
+    dataframe = dataframe.sort_values(by='Patient', ascending=True)
+
+    fig, ax = plt.subplots()
+    ax = sns.violinplot(data=dataframe, order=temps_list,
+                        palette=sns.color_palette('pastel'))
+    sns.stripplot(data=dataframe, jitter=True, order=temps_list,
+                  palette=sns.color_palette(), ax=ax)
+    ax.set_ylabel(metric)
+    ax.set_title(metric + ' values of all patient for the edge ' + region)
+
+    if len(temps_list) == 3:
+        pairs = [('E1', 'E2'), ('E1', 'E3'), ('E3', 'E2')]
+        nums = [0, 1, 2]
+    else:
+        pairs = [('E1', 'E2')]
+        nums = [0, 1]
+
+    a = add_stat_annotation(ax, data=dataframe, order=temps_list,
+                            box_pairs=pairs,
+                            test='t-test_ind', text_format='star', verbose=2)
+
+    maximal_val = np.max(np.max(dataframe)) + 0.5 * \
+        (np.max(np.max(dataframe)) - np.min(np.min(dataframe)))
+    minimal_val = np.min(np.min(dataframe)) - 0.5 * \
+        (np.max(np.max(dataframe)) - np.min(np.min(dataframe)))
+
+    ax.set_xticks(nums)
+    ax.set_xlim(nums[0] - 0.5, nums[-1] + 0.5)
+    ax.set_ylim(minimal_val, maximal_val)
+    plt.tight_layout()
+    plt.show()
+
+    return a
+
+
+if __name__ == '__main__':
+
+    path_json = 'C:/Users/dausort/Downloads/essai_metric_analysis.json'
+    control_path = 'E:/dausort/DOCTORAT/Alcool/control_list.json'
+
+    with open(control_path, 'r') as read_file:
+        control_list = json.load(read_file)
+
+    list_temps = ['E1', 'E2', 'E3']
+    list_temps_control = ['E1', 'E2']
+
+    dataframe_without_control = dictionary_without_controls(
+        path_json, control_list)
+    df_without_control = difference_temps(
+        dataframe_without_control, control_list, 'Mean', True)
+    df_without_control = df_without_control[list_temps]
+
+    a = graphs_analysis(df_without_control, '62_54', 'Mean', 'AD', list_temps)
+
+    dataframe_control = dictionary_controls(path_json, control_list)
+    df_control = difference_temps(
+        dataframe_control, control_list, 'Mean', False)
+    df_control = df_control[list_temps_control]
+
+    a = graphs_analysis(df_control, '62_54', 'Mean', 'AD', list_temps_control)

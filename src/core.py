@@ -239,9 +239,11 @@ def significance_level(list_subject: str, root: str, output_path: str):
     with open(list_subject, 'r') as read_file:
         subj_list = json.load(read_file)
 
-    if os.path.isfile(list_subject.replace('subj_list.json', 'control_list.json')):
+    if os.path.isfile(list_subject.replace('subj_list.json',
+                                           'control_list.json')):
 
-        with open(list_subject.replace('subj_list.json', 'control_list.json'), 'r') as control_file:
+        with open(list_subject.replace('subj_list.json', 'control_list.json'),
+                  'r') as control_file:
             control_list = json.load(control_file)
 
         copy_subj_list = []
@@ -286,19 +288,19 @@ def significance_level(list_subject: str, root: str, output_path: str):
     for i in range(list_E1.shape[0]):
         for j in range(list_E1.shape[1]):
             _, pval_12 = ttest_ind(
-                list_E1[i, j, :], list_E2[i, j, :])  # , alternative='two-sided')
+                list_E1[i, j, :], list_E2[i, j, :], alternative='two-sided')
             if np.isnan(pval_12):
                 pval_12 = 1
             pval_E12[i, j] = pval_12
 
             _, pval_13 = ttest_ind(
-                list_E1[i, j, :], list_E3[i, j, :])  # , alternative='two-sided')
+                list_E1[i, j, :], list_E3[i, j, :], alternative='two-sided')
             if np.isnan(pval_13):
                 pval_13 = 1
             pval_E13[i, j] = pval_13
 
             _, pval_23 = ttest_ind(
-                list_E2[i, j, :], list_E3[i, j, :])  # , alternative='two-sided')
+                list_E2[i, j, :], list_E3[i, j, :], alternative='two-sided')
             if np.isnan(pval_23):
                 pval_23 = 1
             pval_E23[i, j] = pval_23
@@ -535,8 +537,9 @@ def get_mean_tracts(trk_file: str, micro_path: str):
 
     for m in metric_list:
 
-        map_files = [micro_path + 'diamond/' + subject + '_diamond_' + m + '_t0.nii.gz',
-                     micro_path + 'diamond/' + subject + '_diamond_' + m + '_t1.nii.gz']
+        map_files = [micro_path + 'diamond/' + subject + '_diamond_' + m
+                     + '_t0.nii.gz', micro_path + 'diamond/' + subject
+                     + '_diamond_' + m + '_t1.nii.gz']
 
         metricMapList = [nib.load(map_files[0]).get_fdata(),
                          nib.load(map_files[1]).get_fdata()]
@@ -624,8 +627,8 @@ def get_mean_tracts_study(root: str, selected_edges_path: str,
                 mean_dic, dev_dic = get_mean_tracts(trk_file, micro_path)
 
             except FileNotFoundError:
-                print('.trk file not found for edge ' + str(edge) + ' in patient '
-                      + sub)
+                print('.trk file not found for edge ' + str(edge)
+                      + ' in patient ' + sub)
                 continue
             except IndexError:
                 print('IndexError with subject ' + sub)
@@ -636,6 +639,55 @@ def get_mean_tracts_study(root: str, selected_edges_path: str,
 
     json.dump(dic_tot, open(output_path + 'unravel_metric_analysis.json', 'w'),
               default=to_float64)
+
+
+def get_wMetrics(root: str, patient: str):
+    '''
+    Creation of files containing the wFA, wMD, wAD and wRD for each patient. 
+    "w" stands for weigthed.
+
+    Parameters
+    ----------
+    root : string
+        Link of the file in which we are.
+    patient : string
+        Name of the patient.
+    Returns
+    -------
+    None.
+    '''
+
+    metrics = ["FA", "MD", "AD", "RD"]
+
+    for metric in metrics:
+        metric_t0 = (root + "/subjects/" + patient
+                     + "/dMRI/microstructure/diamond/" + patient + "_diamond_"
+                     + metric + "_t0.nii.gz")
+
+        metric_t1 = (root + "/subjects/" + patient
+                     + "/dMRI/microstructure/diamond/" + patient + "_diamond_"
+                     + metric + "_t1.nii.gz")
+
+        fraction_t0 = (root + "/subjects/" + patient +
+                       "/dMRI/microstructure/diamond/" + patient
+                       + "_diamond_fractions_f0.nii.gz")
+
+        fraction_t1 = (root + "/subjects/" + patient
+                       + "/dMRI/microstructure/diamond/" + patient
+                       + "_diamond_fractions_f1.nii.gz")
+
+        cMetric = (nib.load(metric_t0).get_fdata()
+                   * nib.load(fraction_t0).get_fdata()
+                   + nib.load(metric_t1).get_fdata()
+                   * nib.load(fraction_t1).get_fdata()) / (
+                       nib.load(fraction_t1).get_fdata()
+                       + nib.load(fraction_t0).get_fdata())
+
+        out = nib.Nifti1Image(cMetric, affine=nib.load(metric_t0).affine,
+                              header=nib.load(metric_t0).header)
+        out.to_filename(root + "/subjects/" + patient +
+                        "/dMRI/microstructure/diamond/" + patient + "diamond_w"
+                        + metric + ".nii.gz")
 
 
 def slurm_iter(root: str, code: str, patient_list: list = []):
