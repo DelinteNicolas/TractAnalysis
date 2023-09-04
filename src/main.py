@@ -80,23 +80,23 @@ if __name__ == '__main__':
     # print('Computing mean connectivity')
     # get_mean_connectivity(subjects_list_path, root, output_analysis_path)
 
-    print('Finding most relevant connectivity edges')
-    get_edges_of_interest(pval_file, output_path=output_analysis_path,
-                          min_path=min_path)
+    # print('Finding most relevant connectivity edges')
+    # get_edges_of_interest(pval_file, output_path=output_analysis_path,
+    #                       min_path=min_path)
 
-    print('Launching jobs to extract tract of interest')
-    slurm_iter(root, 'extraction')  # , patient_list=['sub01_E1'])
+    # print('Launching jobs to extract tract of interest')
+    # slurm_iter(root, 'extraction')  # , patient_list=['sub01_E1'])
 
 # =============================================================================
 # Third section - Computing tract microstructure
 # =============================================================================
 
-    # print('Estimating mean tract microscture metrics')
-    # slurm_iter(root, 'estimation', patient_list=['Third_section'])
-
     print('Dictionary of the ROI analysis for the selected edges')
     path_json = metrics_analysis(patient_list, root, output_analysis_path,
                                  metric_name, selected_edges_path)
+
+    print('Estimating mean tract microstructure metrics')
+    slurm_iter(root, 'estimation', patient_list=['Third_section'])
 
     # print('Graph analysis for a specific dictionary, a specific region and a '
     # + 'specific metric')
