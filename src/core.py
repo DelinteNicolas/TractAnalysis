@@ -542,11 +542,11 @@ def get_mean_tracts(trk_file: str, micro_path: str):
                      + '_t0.nii.gz', micro_path + 'diamond/' + subject
                      + '_diamond_' + m + '_t1.nii.gz']
 
-        metricMapList = [nib.load(map_files[0]).get_fdata(),
-                         nib.load(map_files[1]).get_fdata()]
+        metric_maps = np.stack((nib.load(map_files[0]).get_fdata(),
+                                nib.load(map_files[1]).get_fdata()),
+                               axis=3)
 
-        microstructure_map = get_microstructure_map(fixel_weights,
-                                                    metricMapList)
+        microstructure_map = get_microstructure_map(fixel_weights, metric_maps)
         mean, dev = get_weighted_mean(microstructure_map, fixel_weights)
 
         mean_dic[m] = mean
@@ -644,7 +644,7 @@ def get_mean_tracts_study(root: str, selected_edges_path: str,
 
 def get_wMetrics(root: str, patient: str):
     '''
-    Creation of files containing the wFA, wMD, wAD and wRD for each patient. 
+    Creation of files containing the wFA, wMD, wAD and wRD for each patient.
     "w" stands for weigthed.
 
     Parameters
