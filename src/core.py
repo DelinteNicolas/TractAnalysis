@@ -523,10 +523,11 @@ def get_mean_tracts(trk_file: str, micro_path: str):
     tensor_files = [micro_path + 'diamond/' + subject + '_diamond_t0.nii.gz',
                     micro_path + 'diamond/' + subject + '_diamond_t1.nii.gz']
 
-    tList = [tensor_to_peak(nib.load(tensor_files[0]).get_fdata()),
-             tensor_to_peak(nib.load(tensor_files[1]).get_fdata())]
+    peaks = np.stack((tensor_to_peak(nib.load(tensor_files[0]).get_fdata()),
+                      tensor_to_peak(nib.load(tensor_files[1]).get_fdata())),
+                     axis=4)
 
-    fixel_weights, _, _ = get_fixel_weight(trk, tList, speed_up=True)
+    fixel_weights = get_fixel_weight(trk, peaks)
 
     metric_list = ['FA', 'MD', 'RD', 'AD']
 
