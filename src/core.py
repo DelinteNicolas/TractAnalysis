@@ -557,10 +557,11 @@ def get_mean_tracts(trk_file: str, micro_path: str):
     tensor_files = [micro_path + 'mf/' + subject + '_mf_peak_f0.nii.gz',
                     micro_path + 'mf/' + subject + '_mf_peak_f1.nii.gz']
 
-    tList = [nib.load(tensor_files[0]).get_fdata(),
-             nib.load(tensor_files[1]).get_fdata()]
+    peaks = np.stack((nib.load(tensor_files[0]).get_fdata(),
+                      nib.load(tensor_files[1]).get_fdata()),
+                     axis=4)
 
-    fixel_weights, _, _ = get_fixel_weight(trk, tList, speed_up=True)
+    fixel_weights = get_fixel_weight(trk, peaks)
 
     metric_list = ['fvf', 'frac']
 
@@ -569,11 +570,11 @@ def get_mean_tracts(trk_file: str, micro_path: str):
         map_files = [micro_path + 'mf/' + subject + '_mf_' + m + '_f0.nii.gz',
                      micro_path + 'mf/' + subject + '_mf_' + m + '_f1.nii.gz']
 
-        metricMapList = [nib.load(map_files[0]).get_fdata(),
-                         nib.load(map_files[1]).get_fdata()]
+        metric_maps = np.stack((nib.load(map_files[0]).get_fdata(),
+                                nib.load(map_files[1]).get_fdata()),
+                               axis=3)
 
-        microstructure_map = get_microstructure_map(fixel_weights,
-                                                    metricMapList)
+        microstructure_map = get_microstructure_map(fixel_weights, metric_maps)
         mean, dev = get_weighted_mean(microstructure_map, fixel_weights)
 
         mean_dic[m] = mean
