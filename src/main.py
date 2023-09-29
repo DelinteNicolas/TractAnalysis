@@ -96,8 +96,8 @@ if __name__ == '__main__':
     # path_json = metrics_analysis(patient_list, root, output_analysis_path,
     #                              metric_name, selected_edges_path)
 
-    # print('Estimating mean tract microstructure metrics')
-    # slurm_iter(root, 'estimation', patient_list=['Third_section'])
+    print('Estimating mean tract microstructure metrics')
+    slurm_iter(root, 'estimation', patient_list=['Third_section'])
 
 # =============================================================================
 # Fourth section - View results (Local)

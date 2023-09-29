@@ -639,6 +639,27 @@ def get_mean_tracts_study(root: str, selected_edges_path: str,
             dic_tot['Mean'][sub][str(edge)] = mean_dic
             dic_tot['Dev'][sub][str(edge)] = dev_dic
 
+        toi_list = ['cc_genu_', 'cc_isthmus_', 'cc_posterior_midbody_',
+                    'cc_anterior_midbody_', 'cc_splenium_', 'uf_left', 'uf_right']
+
+        for toi in toi_list:
+
+            try:
+                trk_file = (tract_path + sub + '_tractogram_' + toi + '.trk')
+
+                mean_dic, dev_dic = get_mean_tracts(trk_file, micro_path)
+
+            except FileNotFoundError:
+                print('.trk file not found for edge ' + str(edge)
+                      + ' in patient ' + sub)
+                continue
+            except IndexError:
+                print('IndexError with subject ' + sub)
+                continue
+
+            dic_tot['Mean'][sub][toi] = mean_dic
+            dic_tot['Dev'][sub][toi] = dev_dic
+
     json.dump(dic_tot, open(output_path + 'unravel_metric_analysis.json', 'w'),
               default=to_float64)
 
