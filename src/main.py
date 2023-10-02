@@ -96,30 +96,32 @@ if __name__ == '__main__':
     # path_json = metrics_analysis(patient_list, root, output_analysis_path,
     #                              metric_name, selected_edges_path)
 
-    print('Estimating mean tract microstructure metrics')
-    slurm_iter(root, 'estimation', patient_list=['Third_section'])
+    # print('Estimating mean tract microstructure metrics')
+    # slurm_iter(root, 'estimation', patient_list=['Third_section'])
 
 # =============================================================================
 # Fourth section - View results (Local)
 # =============================================================================
 
-    # path_json = 'D:/TractAnalysis/output_analysis/unravel_metric_analysis.json'
-    # control_path = 'D:/TractAnalysis/output_analysis/control_list.json'
+    path_json = 'D:/TractAnalysis/output_analysis/unravel_metric_analysis.json'
+    control_path = 'D:/TractAnalysis/output_analysis/control_list.json'
 
-    # print('Graph analysis for a specific dictionary, a specific region and a '
-    #       + 'specific metric')
+    print('Graph analysis for a specific dictionary, a specific region and a '
+          + 'specific metric')
 
-    # with open(control_path, 'r') as read_file:
-    #     control_list = json.load(read_file)
+    with open(control_path, 'r') as read_file:
+        control_list = json.load(read_file)
 
-    # list_temps = ['E1', 'E2', 'E3']
-    # list_temps_control = ['E1', 'E2']
+    list_temps = ['E1', 'E2', 'E3']
+    list_temps_control = ['E1', 'E2']
 
-    # dataframe_without_control = dictionary_without_controls(
-    #     path_json, control_list)
-    # df_without_control = difference_temps(
-    #     dataframe_without_control, control_list, 'Mean', True)
-    # df_without_control = df_without_control[list_temps]
+    dataframe_without_control = dictionary_without_controls(
+        path_json, control_list)
+    df_without_control = difference_temps(
+        dataframe_without_control, control_list, 'Mean', True)
+    df_without_control = df_without_control[list_temps]
 
     # a = graphs_analysis(df_without_control, '[43, 29]', 'Mean', 'stream_count',
     #                     list_temps)
+    a = graphs_analysis(df_without_control, 'uf_left', 'Mean', 'MD',
+                        list_temps)
