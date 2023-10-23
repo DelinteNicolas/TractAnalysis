@@ -12,7 +12,7 @@ from unravel.core import (get_fixel_weight, get_microstructure_map,
                           get_weighted_mean, tensor_to_peak)
 
 with warnings.catch_warnings():
-    warnings.simplefilter("ignore")
+    warnings.simplefilter('ignore')
     from regis.core import find_transform, apply_transform
     from dipy.io.streamline import load_tractogram, save_trk
     from dipy.io.stateful_tractogram import Space, StatefulTractogram
@@ -39,7 +39,7 @@ def slurm_iter(root: str, code: str, patient_list: list = []):
     '''
 
     if len(patient_list) == 0:
-        patient_list = json.load(open(root + 'subjects/subj_list.json', "r"))
+        patient_list = json.load(open(root + 'subjects/subj_list.json', 'r'))
 
     path_to_analysis_code = root.replace(
         root.split('/')[-2] + '/', '') + 'TractAnalysis/'
@@ -104,6 +104,7 @@ def register_atlas_to_subj(fa_path: str, label_path: str, mni_fa_path: str,
 
     static_mask = nib.load(static_mask_path).get_fdata()
     map_mni_to_subj = find_transform(mni_fa_path, fa_path, hard_static_mask=static_mask)
+
     apply_transform(label_path, map_mni_to_subj, static_file=fa_path, output_path=output_path, labels=True)
 
 
@@ -236,7 +237,7 @@ def connectivity_matrices(dwi_path: str, labels_path: str,
 
     plt.savefig(trac_im)
     plt.title('Connectivity matrix')
-    plt.xlabel("Labels")
+    plt.xlabel('Labels')
 
     labels_path = streamlines_path.replace(
         '_tractogram', '_labels_connectivity_matrix')
@@ -277,21 +278,6 @@ def significance_level(list_subject, root: str, output_path: str):
             subj_list = json.load(read_file)
     else:
         subj_list = list_subject
-
-    # if os.path.isfile(list_subject.replace('subj_list.json',
-    #                                        'control_list.json')):
-
-    #     with open(list_subject.replace('subj_list.json', 'control_list.json'),
-    #               'r') as control_file:
-    #         control_list = json.load(control_file)
-
-    #     copy_subj_list = []
-
-    #     for i in range(len(subj_list)):
-    #         if str(subj_list[i]) not in control_list:
-    #             copy_subj_list.append(str(subj_list[i]))
-
-    #     subj_list = copy_subj_list
 
     list_E1 = []
     list_E2 = []
@@ -814,8 +800,6 @@ def get_mean_tracts_study(root: str, selected_edges_path: str,
 
         for edge in edge_list:
 
-            print(edge)
-
             try:
                 trk_file = (tract_path + sub + '_tractogram_sift_'
                             + str(edge[0]) + '_' + str(edge[1]) + '.trk')
@@ -839,10 +823,11 @@ def get_mean_tracts_study(root: str, selected_edges_path: str,
         for toi in toi_list:
 
             try:
+
                 trk_file = (tract_path + sub + '_tractogram_' + toi + '.trk')
 
                 mean_dic, dev_dic = get_mean_tracts(trk_file, micro_path)
-
+                print(tract_path + sub + '_tractogram_' + toi + '.trk')
             except FileNotFoundError:
                 print('.trk file not found for edge ' + str(edge)
                       + ' in patient ' + sub)

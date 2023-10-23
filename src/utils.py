@@ -12,9 +12,9 @@ from dipy.tracking.utils import ndbincount
 
 
 def to_float64(val):
-    """
+    '''
     Used if *val* is an instance of numpy.float32.
-    """
+    '''
 
     return np.float64(val)
 
@@ -60,13 +60,13 @@ def get_acquisition_view(affine) -> str:
     i = affine[2, 0]
 
     if (a != 0 and b != 0 and c != 0 and sum_extra_diag_aff == 0):
-        return "axial"
+        return 'axial'
     elif (d != 0 and e != 0 and f != 0 and sum_diag_aff == 0):
-        return "sagittal"
+        return 'sagittal'
     elif (g != 0 and h != 0 and i != 0 and sum_diag_aff == 0):
-        return "coronal"
+        return 'coronal'
     else:
-        return "oblique"
+        return 'oblique'
 
 
 def get_view_from_data(data_path: str):
@@ -114,7 +114,8 @@ def print_views_from_study_folder(folder_path: str):
 def connectivity_matrix(streamlines, affine, label_volume, inclusive=False,
                         symmetric=True, return_mapping=False,
                         mapping_as_streamlines=False):
-    """Count the streamlines that start and end at each label pair.
+    '''
+    Count the streamlines that start and end at each label pair.
 
     Parameters
     ----------
@@ -151,7 +152,7 @@ def connectivity_matrix(streamlines, affine, label_volume, inclusive=False,
         for each start end pair such that if ``i < j`` mapping will have key
         ``(i, j)`` but not key ``(j, i)``.
 
-    """
+    '''
     # Error checking on label_volume
 
     print('Using this shit')
@@ -160,8 +161,8 @@ def connectivity_matrix(streamlines, affine, label_volume, inclusive=False,
                        or ((kind == 'i') and (label_volume.min() >= 0)))
     valid_label_volume = (labels_positive and label_volume.ndim == 3)
     if not valid_label_volume:
-        raise ValueError("label_volume must be a 3d integer array with"
-                         "non-negative label values")
+        raise ValueError('label_volume must be a 3d integer array with'
+                         'non-negative label values')
 
     # If streamlines is an iterator
     if return_mapping and mapping_as_streamlines:
@@ -263,9 +264,9 @@ def check_labels(list_subjects: str, root: str, output_path: str):
 
     for i in range(len(list_subjects)):
 
-        with open(root + "subjects/" + str(list_subjects[i])
-                  + "/dMRI/tractography/" + str(list_subjects[i])
-                  + "_labels_connectivity_matrix_sift.txt") as file:
+        with open(root + 'subjects/' + str(list_subjects[i])
+                  + '/dMRI/tractography/' + str(list_subjects[i])
+                  + '_labels_connectivity_matrix_sift.txt') as file:
             area_sorted = [line.rstrip('\n') for line in file]
 
             if len(general_list) == 0:
@@ -300,17 +301,15 @@ def labels_matching(excel_path, connectivity_matrix_index_file):
 
 
 # %% Cell 4 - Computing mean connectivity
-def get_min_connectivity(output_path: str, evolution: bool):
+def get_min_connectivity(output_path: str, evolution: bool, list_temps: list = []):
     '''
-
+    Return the minimum connectivity matrix.
 
     Parameters
     ----------
-    list_subjects : list
-        DESCRIPTION.
-    root : str
-        DESCRIPTION.
     output_path : str
+        DESCRIPTION.
+    evolution : bool
         DESCRIPTION.
 
     Returns
@@ -326,8 +325,7 @@ def get_min_connectivity(output_path: str, evolution: bool):
     else:
         labels_found = False
 
-    if evolution:
-        print('le changement est INEVITABLE !!!!!!')
+    if evolution and len(list_temps) > 0:
         list_E1 = np.load(output_path + 'list_E1.npy')
         list_E2 = np.load(output_path + 'list_E2.npy')
 
