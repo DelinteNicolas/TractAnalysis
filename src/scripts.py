@@ -31,7 +31,7 @@ selected_edges_path = output_analysis_path + 'selected_edges.json'
 if code == 'connectivity':
     # Launching jobs to compute connectivity matrices
 
-    # register_atlas_to_subj(fa_path, label_atlas_path, mni_fa_path, labels_path, static_mask_path=static_mask_path)
+    register_atlas_to_subj(fa_path, label_atlas_path, mni_fa_path, labels_path, static_mask_path=static_mask_path)
 
     new_label_map = connectivity_matrices(dwi_path, labels_path,
                                           streamlines_path,

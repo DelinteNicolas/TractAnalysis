@@ -4,7 +4,7 @@ import warnings
 import numpy as np
 import pandas as pd
 import nibabel as nib
-from utils import add_regions, to_float64
+from utils import add_regions, to_float64, connectivity_matrix
 import matplotlib.pyplot as plt
 from scipy.stats import ttest_ind
 from unravel.utils import tensor_to_DTI, tract_to_ROI
@@ -165,6 +165,8 @@ def connectivity_matrices(dwi_path: str, labels_path: str,
     labels = nib.load(labels_path).get_fdata()
 
     trk = load_tractogram(streamlines_path, 'same')
+    trk.to_vox()
+
     streams_data = trk.streamlines
 
     affine = nib.load(dwi_path).affine
@@ -181,7 +183,7 @@ def connectivity_matrices(dwi_path: str, labels_path: str,
     middle_labels = []
     middle_area = []
 
-    unwanted = ['vessel', 'CSF', 'Vent', 'unknown', 'White_Matter', 'WM',
+    unwanted = ['vessel', 'CSF', 'Vent', 'Unknown', 'White_Matter', 'WM',
                 'Chiasm']
 
     for i in range(len(values)):
@@ -207,25 +209,25 @@ def connectivity_matrices(dwi_path: str, labels_path: str,
     area_sorted = np.delete(area_sorted, a)
 
     new_labels_value = np.linspace(
-        0, len(labels_sorted) - 1, len(labels_sorted))
+        0, len(labels_sorted) - 1, len(labels_sorted)) + 1
     new_label_map = np.zeros([len(labels), len(labels[0]), len(labels[0][0])])
     for i in range(len(labels_sorted)):
         new_label_map += np.where(labels
                                   == labels_sorted[i], new_labels_value[i], 0)
-    new_label_map = new_label_map.astype('int64')
+    new_label_map = new_label_map.astype(np.uint8)
 
-    M, _ = dipy.tracking.utils.connectivity_matrix(streams_data, affine,
-                                                   new_label_map,
-                                                   return_mapping=True,
-                                                   mapping_as_streamlines=True)
+    M, _ = connectivity_matrix(streams_data, affine,
+                               new_label_map,
+                               return_mapping=True,
+                               mapping_as_streamlines=True)
 
     np.fill_diagonal(M, 0)
+    M = M[1:, 1:]
     M = M.astype('float32')
     M = M / np.sum(M)
 
     fig, ax = plt.subplots()
-    ax.imshow(np.log1p(M * len(trk.streamlines._offsets)),
-              interpolation='nearest')
+    ax.imshow(np.log1p(M * len(trk.streamlines._offsets)))
     ax.set_yticks(np.arange(len(area_sorted)))
     ax.set_yticklabels(area_sorted)
 
@@ -342,7 +344,6 @@ def significance_level_evolution(subj_list, control_list, root, output_path):
     list_control = [x.replace('_E1', '').replace('_E2', '') for x in control_list]
 
     list_subj = np.unique(list_subj)
-    print(list_subj)
     list_control = np.unique(list_control)
 
     for sub in list_subj:
@@ -353,19 +354,17 @@ def significance_level_evolution(subj_list, control_list, root, output_path):
         bool_E1 = False
         bool_E2 = False
 
-        try:
+        if str(sub) + '_E1' in subj_list:
             matrix_E1 = np.load(path_E1)
-        except FileNotFoundError:
+        else:
             print('Connectivity matrix not found for ' + str(sub) + '_E1')
             bool_E1 = True
-            continue
 
-        try:
+        if str(sub) + '_E2' in subj_list:
             matrix_E2 = np.load(path_E2)
-        except FileNotFoundError:
+        else:
             print('Connectivity matrix not found for ' + str(sub) + '_E2')
             bool_E2 = True
-            continue
 
         if bool_E1:
             evolution_patient.append(np.zeros((matrix_E2.shape)) * np.nan)
@@ -382,19 +381,17 @@ def significance_level_evolution(subj_list, control_list, root, output_path):
         bool_E1 = False
         bool_E2 = False
 
-        try:
+        if str(cont) + '_E1' in control_list:
             matrice_E1 = np.load(control_E1)
-        except FileNotFoundError:
+        else:
             print('Connectivity matrix not found for ' + str(cont) + '_E1')
             bool_E1 = True
-            continue
 
-        try:
+        if str(cont) + '_E2' in control_list:
             matrice_E2 = np.load(control_E2)
-        except FileNotFoundError:
+        else:
             print('Connectivity matrix not found for ' + str(cont) + '_E2')
             bool_E2 = True
-            continue
 
         if bool_E1:
             evolution_control.append(np.zeros((matrice_E2.shape)) * np.nan)
@@ -412,7 +409,9 @@ def significance_level_evolution(subj_list, control_list, root, output_path):
     _, pval_12 = ttest_ind(evolution_patient, evolution_control, axis=2, alternative='two-sided', nan_policy='omit', equal_var=False)
     pval_12[np.isnan(pval_12)] = 1
 
-    np.save(output_path + 'pvals_E12.npy', pval_12)
+    a = np.array(pval_12)
+
+    np.save(output_path + 'pvals_E12.npy', a)
 
 # %% Cell 6 - Finding most relevant connectivity edges
 def get_edges_of_interest(pval_file: str, output_path: str,
@@ -799,6 +798,8 @@ def get_mean_tracts_study(root: str, selected_edges_path: str,
     with open(selected_edges_path, 'r') as read_file:
         edge_list = json.load(read_file)
 
+    subj_list = ['sub01_E1']
+
     dic_tot = {}
     dic_tot['Mean'] = {}
     dic_tot['Dev'] = {}
@@ -812,6 +813,8 @@ def get_mean_tracts_study(root: str, selected_edges_path: str,
         dic_tot['Dev'][sub] = {}
 
         for edge in edge_list:
+
+            print(edge)
 
             try:
                 trk_file = (tract_path + sub + '_tractogram_sift_'

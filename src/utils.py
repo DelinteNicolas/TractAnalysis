@@ -6,6 +6,9 @@ import nibabel as nib
 import matplotlib.pyplot as plt
 import seaborn as sns
 from statannot import add_stat_annotation
+from collections import defaultdict, OrderedDict
+from itertools import combinations, groupby
+from dipy.tracking.utils import ndbincount
 
 
 def to_float64(val):
@@ -107,8 +110,149 @@ def print_views_from_study_folder(folder_path: str):
 
     json.dump(view_list_tot, open(folder_path + 'subjects/subj_view.json', 'w'))
 
+# %% Cell 2 - Modified from DIPY
+def connectivity_matrix(streamlines, affine, label_volume, inclusive=False,
+                        symmetric=True, return_mapping=False,
+                        mapping_as_streamlines=False):
+    """Count the streamlines that start and end at each label pair.
 
-# %% Cell 2 - Verification of labels
+    Parameters
+    ----------
+    streamlines : sequence
+        A sequence of streamlines.
+    affine : array_like (4, 4)
+        The mapping from voxel coordinates to streamline coordinates.
+        The voxel_to_rasmm matrix, typically from a NIFTI file.
+    label_volume : ndarray
+        An image volume with an integer data type, where the intensities in the
+        volume map to anatomical structures.
+    inclusive: bool
+        Whether to analyze the entire streamline, as opposed to just the
+        endpoints. Allowing this will increase calculation time and mapping
+        size, especially if mapping_as_streamlines is True. False by default.
+    symmetric : bool, True by default
+        Symmetric means we don't distinguish between start and end points. If
+        symmetric is True, ``matrix[i, j] == matrix[j, i]``.
+    return_mapping : bool, False by default
+        If True, a mapping is returned which maps matrix indices to
+        streamlines.
+    mapping_as_streamlines : bool, False by default
+        If True voxel indices map to lists of streamline objects. Otherwise
+        voxel indices map to lists of integers.
+
+    Returns
+    -------
+    matrix : ndarray
+        The number of connection between each pair of regions in
+        `label_volume`.
+    mapping : defaultdict(list)
+        ``mapping[i, j]`` returns all the streamlines that connect region `i`
+        to region `j`. If `symmetric` is True mapping will only have one key
+        for each start end pair such that if ``i < j`` mapping will have key
+        ``(i, j)`` but not key ``(j, i)``.
+
+    """
+    # Error checking on label_volume
+
+    print('Using this shit')
+    kind = label_volume.dtype.kind
+    labels_positive = ((kind == 'u')
+                       or ((kind == 'i') and (label_volume.min() >= 0)))
+    valid_label_volume = (labels_positive and label_volume.ndim == 3)
+    if not valid_label_volume:
+        raise ValueError("label_volume must be a 3d integer array with"
+                         "non-negative label values")
+
+    # If streamlines is an iterator
+    if return_mapping and mapping_as_streamlines:
+        streamlines = list(streamlines)
+
+    if inclusive:
+        # Create ndarray to store streamline connections
+        edges = np.ndarray(shape=(3, 0), dtype=int)
+        # lin_T, offset = _mapping_to_voxel(affine)
+        for sl, _ in enumerate(streamlines):
+            # Convert streamline to voxel coordinates
+            # entire = _to_voxel_coordinates(streamlines[sl], lin_T, offset)
+            i, j, k = streamlines[sl].T
+
+            if symmetric:
+                # Create list of all labels streamline passes through
+                entirelabels = list(OrderedDict.fromkeys(label_volume[i, j, k]))
+                # Append all connection combinations with streamline number
+                for comb in combinations(entirelabels, 2):
+                    edges = np.append(edges, [[comb[0]], [comb[1]], [sl]],
+                                      axis=1)
+            else:
+                # Create list of all labels streamline passes through, keeping
+                # order and whether a label was entered multiple times
+                entirelabels = list(groupby(label_volume[i, j, k]))
+                # Append connection combinations along with streamline number,
+                # removing duplicates and connections from a label to itself
+                combs = set(combinations([z[0] for z in entirelabels], 2))
+                for comb in combs:
+                    if comb[0] == comb[1]:
+                        pass
+                    else:
+                        edges = np.append(edges, [[comb[0]], [comb[1]], [sl]],
+                                          axis=1)
+        if symmetric:
+            edges[0:2].sort(0)
+        mx = label_volume.max() + 1
+        matrix = ndbincount(edges[0:2], shape=(mx, mx))
+
+        if symmetric:
+            matrix = np.maximum(matrix, matrix.T)
+        if return_mapping:
+            mapping = defaultdict(list)
+            for i, (a, b, c) in enumerate(edges.T):
+                mapping[a, b].append(c)
+            # Replace each list of indices with the streamlines they index
+            if mapping_as_streamlines:
+                for key in mapping:
+                    mapping[key] = [streamlines[i] for i in mapping[key]]
+
+            return matrix, mapping
+
+        return matrix
+    else:
+        # take the first and last point of each streamline
+        endpoints = [sl[0::len(sl) - 1] for sl in streamlines]
+
+        # Map the streamlines coordinates to voxel coordinates
+        # lin_T, offset = _mapping_to_voxel(affine)
+        # endpoints = _to_voxel_coordinates(endpoints, lin_T, offset)
+
+        # get labels for label_volume
+
+        i, j, k = np.array(endpoints).astype(dtype=int).T
+
+        endlabels = label_volume[i, j, k]
+
+        if symmetric:
+            endlabels.sort(0)
+        mx = label_volume.max() + 1
+        matrix = ndbincount(endlabels, shape=(mx, mx))
+        if symmetric:
+            matrix = np.maximum(matrix, matrix.T)
+
+        if return_mapping:
+            mapping = defaultdict(list)
+            for i, (a, b) in enumerate(endlabels.T):
+                mapping[a, b].append(i)
+
+            # Replace each list of indices with the streamlines they index
+            if mapping_as_streamlines:
+                for key in mapping:
+                    mapping[key] = [streamlines[i] for i in mapping[key]]
+
+            # Return the mapping matrix and the mapping
+            return matrix, mapping
+
+        return matrix
+
+
+# %% Cell 3 - Verification of labels
 def check_labels(list_subjects: str, root: str, output_path: str):
 
     general_list = []
@@ -148,14 +292,14 @@ def labels_matching(excel_path, connectivity_matrix_index_file):
     df = pd.read_excel(excel_path)
 
     for i in range(len(df['Area'])):
-        for j in range(len(area_sorted)):
-            if df.loc[i, 'Area'] == area_sorted[j]:
+        for j in range(1, len(area_sorted) + 1):
+            if df.loc[i, 'Area'] == area_sorted[j - 1]:
                 df.loc[i, 'Index_new'] = int(j)
 
     df.to_excel(excel_path.replace('.xlsx', '_bis.xlsx'))
 
 
-# %% Cell 3 - Computing mean connectivity
+# %% Cell 4 - Computing mean connectivity
 def get_min_connectivity(output_path: str, evolution: bool):
     '''
 
@@ -183,9 +327,13 @@ def get_min_connectivity(output_path: str, evolution: bool):
         labels_found = False
 
     if evolution:
-        list_matrices = np.load(output_path + 'evolution_patient.npy')
+        print('le changement est INEVITABLE !!!!!!')
+        list_E1 = np.load(output_path + 'list_E1.npy')
+        list_E2 = np.load(output_path + 'list_E2.npy')
 
-        min_connectivity = np.min(abs(list_matrices), axis=2)
+        list_matrices = np.append(list_E1, list_E2, axis=2)
+
+        min_connectivity = np.min(list_matrices, axis=2)
 
         np.save(output_path + 'min_connectivity_matrix_evolution.npy', min_connectivity)
 
@@ -201,7 +349,7 @@ def get_min_connectivity(output_path: str, evolution: bool):
         np.save(output_path + 'min_connectivity_matrix.npy', min_connectivity)
 
 
-# %% Cell 4 - Dictionary
+# %% Cell 5 - Dictionary
 def jsonToPandas(jsonFilePath: str):
 
     import pandas as pd
@@ -331,7 +479,7 @@ def dictionary_controls(path_json, control_list):
     return dataframe2
 
 
-# %% Cell 5 - Graphs
+# %% Cell 6 - Graphs
 def graphs_analysis(dataframe, region, dic, metric, temps_list):
 
     dataframe = dataframe.loc[dic, :, region, metric]
