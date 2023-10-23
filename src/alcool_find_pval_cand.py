@@ -16,8 +16,8 @@ from core import (slurm_iter, significance_level, get_edges_of_interest,
 
 if __name__ == '__main__':
 
-    path_json = 'D:/TractAnalysis/output_analysis/unravel_metric_analysis.json'
-    # path_json = 'D:/TractAnalysis/output_analysis/essai_metric_analysis.json'
+    # path_json = 'D:/TractAnalysis/output_analysis/unravel_metric_analysis.json'
+    path_json = 'D:/TractAnalysis/output_analysis/essai_metric_analysis.json'
     control_path = 'D:/TractAnalysis/output_analysis/control_list.json'
 
     with open(control_path, 'r') as read_file:
