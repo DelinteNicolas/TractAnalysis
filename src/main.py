@@ -83,8 +83,8 @@ if __name__ == '__main__':
     # get_edges_of_interest(pval_evolution_file, output_path=output_analysis_path,
     #                       min_path=min_evolution_path)
 
-    # print('Launching jobs to extract tract of interest')
-    # slurm_iter(root, 'extraction')
+    print('Launching jobs to extract tract of interest')
+    slurm_iter(root, 'extraction', patient_list=['sub02_E1'])
 
 # =============================================================================
 # Third section - Computing tract microstructure
@@ -93,8 +93,8 @@ if __name__ == '__main__':
     # print('Dictionary of the ROI analysis for the selected edges')
     # path_json = metrics_analysis(patient_list, root, output_analysis_path, metric_name, selected_edges_path)
 
-    print('Estimating mean tract microstructure metrics')
-    slurm_iter(root, 'estimation', patient_list=['Third_section'])
+    # print('Estimating mean tract microstructure metrics')
+    # slurm_iter(root, 'estimation', patient_list=['Third_section'])
 
 # =============================================================================
 # Fourth section - View results (Local)

@@ -1,29 +1,34 @@
 import os
 import json
-import pandas as pd
 import numpy as np
+import pandas as pd
+import seaborn as sns
 import nibabel as nib
 import matplotlib.pyplot as plt
-import seaborn as sns
 from statannot import add_stat_annotation
-from collections import defaultdict, OrderedDict
-from itertools import combinations, groupby
 from dipy.tracking.utils import ndbincount
+from itertools import combinations, groupby
+from collections import defaultdict, OrderedDict
 
-
+# %% Cell 0 - Mini useful functions
 def to_float64(val):
     '''
-    Used if *val* is an instance of numpy.float32.
+    Used to transform an instance of np.float32 in a np.float64.
+
+    Parameters
+    ----------
+    val : float
+        Value to be transformed.
+
+    Returns
+    -------
+    float
+        Transformed value.
+
     '''
 
     return np.float64(val)
 
-def add_regions(edge_name, new_regions):
-
-    for i in range(len(new_regions)):
-        edge_name.append([new_regions[i]])
-
-    return edge_name
 
 # %% Cell 1 - Checking view orientations for all patients
 def get_acquisition_view(affine) -> str:
@@ -69,7 +74,21 @@ def get_acquisition_view(affine) -> str:
         return 'oblique'
 
 
-def get_view_from_data(data_path: str):
+def get_view_from_data(data_path: str) -> str:
+    '''
+    Return the view in string of the patient.
+
+    Parameters
+    ----------
+    data_path : str
+        .
+
+    Returns
+    -------
+    str
+        View of the patient.
+
+    '''
 
     img = nib.load(data_path)
 
@@ -78,7 +97,21 @@ def get_view_from_data(data_path: str):
     return view
 
 
-def get_views_from_data_folder(folder_path: str):
+def get_views_from_data_folder(folder_path: str) -> list:
+    '''
+    List of the views of each patient in one 'data' folder.
+
+    Parameters
+    ----------
+    folder_path : str
+        Path to the study folder.
+
+    Returns
+    -------
+    list of str
+        List of the views.
+
+    '''
 
     view_list = []
 
@@ -92,7 +125,7 @@ def get_views_from_data_folder(folder_path: str):
 
 def print_views_from_study_folder(folder_path: str):
     '''
-
+    Creation of a json file containing the view of the different patients.
 
     Parameters
     ----------
@@ -110,12 +143,13 @@ def print_views_from_study_folder(folder_path: str):
 
     json.dump(view_list_tot, open(folder_path + 'subjects/subj_view.json', 'w'))
 
+
 # %% Cell 2 - Modified from DIPY
-def connectivity_matrix(streamlines, affine, label_volume, inclusive=False,
-                        symmetric=True, return_mapping=False,
-                        mapping_as_streamlines=False):
+def connectivity_matrix(streamlines, affine, label_volume, inclusive: bool = False,
+                        symmetric: bool = True, return_mapping: bool = False,
+                        mapping_as_streamlines: str = False):
     '''
-    Count the streamlines that start and end at each label pair.
+    Count the streamlines starting and ending at each label pair.
 
     Parameters
     ----------
@@ -180,10 +214,10 @@ def connectivity_matrix(streamlines, affine, label_volume, inclusive=False,
             if symmetric:
                 # Create list of all labels streamline passes through
                 entirelabels = list(OrderedDict.fromkeys(label_volume[i, j, k]))
+
                 # Append all connection combinations with streamline number
                 for comb in combinations(entirelabels, 2):
-                    edges = np.append(edges, [[comb[0]], [comb[1]], [sl]],
-                                      axis=1)
+                    edges = np.append(edges, [[comb[0]], [comb[1]], [sl]], axis=1)
             else:
                 # Create list of all labels streamline passes through, keeping
                 # order and whether a label was entered multiple times
@@ -195,8 +229,8 @@ def connectivity_matrix(streamlines, affine, label_volume, inclusive=False,
                     if comb[0] == comb[1]:
                         pass
                     else:
-                        edges = np.append(edges, [[comb[0]], [comb[1]], [sl]],
-                                          axis=1)
+                        edges = np.append(edges, [[comb[0]], [comb[1]], [sl]], axis=1)
+
         if symmetric:
             edges[0:2].sort(0)
         mx = label_volume.max() + 1
@@ -208,6 +242,7 @@ def connectivity_matrix(streamlines, affine, label_volume, inclusive=False,
             mapping = defaultdict(list)
             for i, (a, b, c) in enumerate(edges.T):
                 mapping[a, b].append(c)
+
             # Replace each list of indices with the streamlines they index
             if mapping_as_streamlines:
                 for key in mapping:
@@ -225,7 +260,6 @@ def connectivity_matrix(streamlines, affine, label_volume, inclusive=False,
         # endpoints = _to_voxel_coordinates(endpoints, lin_T, offset)
 
         # get labels for label_volume
-
         i, j, k = np.array(endpoints).astype(dtype=int).T
 
         endlabels = label_volume[i, j, k]
@@ -255,18 +289,32 @@ def connectivity_matrix(streamlines, affine, label_volume, inclusive=False,
 
 # %% Cell 3 - Verification of labels
 def check_labels(list_subjects: str, root: str, output_path: str):
+    '''
+    Verification if the labels are the same in each patient and creation of a txt
+    file with the general list of labels.
+
+    Parameters
+    ----------
+    list_subjects : str
+        List of the patient.
+    root : str
+        Path to the root directory.
+    output_path : str
+        Path to the output directory.
+
+    Returns
+    -------
+    None.
+
+    '''
 
     general_list = []
     check_failed = False
 
-    # with open(list_subjects, 'r') as read_file:
-    #     list_subjects = json.load(read_file)
-
     for i in range(len(list_subjects)):
 
-        with open(root + 'subjects/' + str(list_subjects[i])
-                  + '/dMRI/tractography/' + str(list_subjects[i])
-                  + '_labels_connectivity_matrix_sift.txt') as file:
+        with open(root + 'subjects/' + str(list_subjects[i]) + '/dMRI/tractography/'
+                  + str(list_subjects[i]) + '_labels_connectivity_matrix_sift.txt') as file:
             area_sorted = [line.rstrip('\n') for line in file]
 
             if len(general_list) == 0:
@@ -285,7 +333,24 @@ def check_labels(list_subjects: str, root: str, output_path: str):
         for line in general_list:
             f.write(str(line) + '\n')
 
-def labels_matching(excel_path, connectivity_matrix_index_file):
+def labels_matching(excel_path: str, connectivity_matrix_index_file: str):
+    '''
+    Change the number of the FreeSurfer label to have numbers ranging from 1 to
+    the number of labels in the general list and creation of a second excel with
+    the new labels.
+
+    Parameters
+    ----------
+    excel_path : str
+        Path to the excel containing the label of FreeSurfer.
+    connectivity_matrix_index_file : str
+        Path to one connectivity matrix.
+
+    Returns
+    -------
+    None.
+
+    '''
 
     with open(connectivity_matrix_index_file, 'r') as f:
         area_sorted = [line.rstrip('\n') for line in f]
@@ -308,9 +373,10 @@ def get_min_connectivity(output_path: str, evolution: bool, list_temps: list = [
     Parameters
     ----------
     output_path : str
-        DESCRIPTION.
+        Path to the output directory.
     evolution : bool
-        DESCRIPTION.
+        If False, juste min connectivity among the patient. If True, min connectivity,
+        among the evolution of the patient.
 
     Returns
     -------

@@ -4,10 +4,10 @@ import warnings
 import numpy as np
 import pandas as pd
 import nibabel as nib
-from utils import add_regions, to_float64, connectivity_matrix
 import matplotlib.pyplot as plt
 from scipy.stats import ttest_ind
 from unravel.utils import tensor_to_DTI, tract_to_ROI
+from utils import to_float64, connectivity_matrix
 from unravel.core import (get_fixel_weight, get_microstructure_map,
                           get_weighted_mean, tensor_to_peak)
 
@@ -26,7 +26,7 @@ def slurm_iter(root: str, code: str, patient_list: list = []):
     Parameters
     ----------
     root : str
-        Path to study
+        Path to study.
     code : str
         Part of the script to launch. Either 'connectivity' or 'extraction'.
     patient_list : list, optional
@@ -74,7 +74,8 @@ def register_labels_to_atlas(labels_path: str, mni_fa_path: str, output_path: st
 
     map_desikan_to_fa = find_transform(labels_path, mni_fa_path, only_affine=True)
 
-    apply_transform(labels_path, map_desikan_to_fa, static_file=mni_fa_path, output_path=output_path, labels=True)
+    apply_transform(labels_path, map_desikan_to_fa, static_file=mni_fa_path,
+                    output_path=output_path, labels=True)
 
 
 # %% Cell 3 - Registration of the atlas in the patient space
@@ -90,9 +91,9 @@ def register_atlas_to_subj(fa_path: str, label_path: str, mni_fa_path: str,
     label_path : str
         Label registered, moving file.
     mni_fa_path : str
-        DESCRIPTION.
+        Path to the FSL_HCP1065_FA_1mm.nii.gz file.
     output_path : str
-        DESCRIPTION.
+        Path to the output directory.
     static_mask_path : str
         Static mask that defines which pixels in the static image are not set to 0.
 
@@ -105,25 +106,27 @@ def register_atlas_to_subj(fa_path: str, label_path: str, mni_fa_path: str,
     static_mask = nib.load(static_mask_path).get_fdata()
     map_mni_to_subj = find_transform(mni_fa_path, fa_path, hard_static_mask=static_mask)
 
-    apply_transform(label_path, map_mni_to_subj, static_file=fa_path, output_path=output_path, labels=True)
+    apply_transform(label_path, map_mni_to_subj, static_file=fa_path,
+                    output_path=output_path, labels=True)
 
 
 # %% Cell 4 - Connectivity matrices
 def check_wanted(unwanted_keyword_list: list, long_name: str) -> bool:
     '''
-
+    Function verifying that the unwanted regions are not in the FreeSurfer labels
+    for this cohort of patient.
 
     Parameters
     ----------
     unwanted_keyword_list : list
-        DESCRIPTION.
+        List of unwanted regions of the brain like the so called 'Unknown' region.
     long_name : str
-        DESCRIPTION.
+        Region to check.
 
     Returns
     -------
     bool
-        DESCRIPTION.
+        Return True if long_name is not in unwanted_keyword_list. False otherwise.
 
     '''
 
@@ -134,32 +137,28 @@ def check_wanted(unwanted_keyword_list: list, long_name: str) -> bool:
     return True
 
 
-def connectivity_matrices(dwi_path: str, labels_path: str,
-                          streamlines_path: str, output_path: str,
-                          freeSurfer_labels: str):
+def connectivity_matrices(dwi_path: str, labels_path: str, streamlines_path: str,
+                          output_path: str, freeSurfer_labels: str):
     '''
-    Creation of the connectivity matrix for each patient at each acquisition
-    time.
+    Creation of the connectivity matrix for each patient at each acquisition time.
 
     Parameters
     ----------
     dwi_path : str
-        DESCRIPTION.
+        Path to the preproced diffusion file of a specific patient.
     labels_path : str
-        DESCRIPTION.
+        Path to the registered FreeSurfer labels of a specific patient.
     streamlines_path : str
-        DESCRIPTION.
+        Path to the sift tractogram of the patient.
     output_path : str
-        DESCRIPTION.
+        Path to the output directory.
     freeSurfer_labels : str
-        DESCRIPTION.
-    subjects_list : str
-        DESCRIPTION.
+        Path to the excel containing the labels of FreeSurfer.
 
     Returns
     -------
-    new_label_map : TYPE
-        DESCRIPTION.
+    new_label_map : array of int
+        New label map of the patient.
 
     '''
 
@@ -184,8 +183,7 @@ def connectivity_matrices(dwi_path: str, labels_path: str,
     middle_labels = []
     middle_area = []
 
-    unwanted = ['vessel', 'CSF', 'Vent', 'Unknown', 'White_Matter', 'WM',
-                'Chiasm']
+    unwanted = ['vessel', 'CSF', 'Vent', 'Unknown', 'White_Matter', 'WM', 'Chiasm']
 
     for i in range(len(values)):
         for j in range(len(df['Index'])):
@@ -201,24 +199,21 @@ def connectivity_matrices(dwi_path: str, labels_path: str,
                     middle_labels.append(values[i])
                     middle_area.append(df['Area'][j])
 
-    labels_sorted = np.append(
-        np.append(right_labels, middle_labels), left_labels)
+    labels_sorted = np.append(np.append(right_labels, middle_labels), left_labels)
     a = np.argwhere(labels_sorted == 0)
 
     labels_sorted = np.delete(labels_sorted, a)
     area_sorted = np.append(np.append(right_area, middle_area), left_area)
     area_sorted = np.delete(area_sorted, a)
 
-    new_labels_value = np.linspace(
-        0, len(labels_sorted) - 1, len(labels_sorted)) + 1
+    new_labels_value = np.linspace(0, len(labels_sorted) - 1, len(labels_sorted)) + 1
     new_label_map = np.zeros([len(labels), len(labels[0]), len(labels[0][0])])
+
     for i in range(len(labels_sorted)):
-        new_label_map += np.where(labels
-                                  == labels_sorted[i], new_labels_value[i], 0)
+        new_label_map += np.where(labels == labels_sorted[i], new_labels_value[i], 0)
     new_label_map = new_label_map.astype(np.uint8)
 
-    M, _ = connectivity_matrix(streams_data, affine,
-                               new_label_map,
+    M, _ = connectivity_matrix(streams_data, affine, new_label_map,
                                return_mapping=True,
                                mapping_as_streamlines=True)
 
@@ -254,18 +249,18 @@ def connectivity_matrices(dwi_path: str, labels_path: str,
 
 
 # %% Cell 5 - Computing p-values of connectivity matrices
-def significance_level(list_subject, root: str, output_path: str):
+def significance_level(list_subject: list, root: str, output_path: str):
     '''
-
+    Computing the pvalue matrix between the E1/E2, E1/E3 and E2/E3 for the patients.
 
     Parameters
     ----------
-    list_subject : str
-        DESCRIPTION.
+    list_subject : list of str
+        List of the patients without the controls.
     root : str
-        DESCRIPTION.
+        Path to the root of the study.
     output_path : str
-        DESCRIPTION.
+        Path to the output directory.
 
     Returns
     -------
@@ -285,7 +280,9 @@ def significance_level(list_subject, root: str, output_path: str):
 
     for nombre_i, sub in enumerate(subj_list):
 
-        path = (root + 'subjects/' + str(sub) + '/dMRI/tractography/' + str(sub) + '_connectivity_matrix_sift.npy')
+        path = (root + 'subjects/' + str(sub) + '/dMRI/tractography/' + str(sub)
+                + '_connectivity_matrix_sift.npy')
+
         try:
             matrix = np.load(path)
         except FileNotFoundError:
@@ -307,21 +304,44 @@ def significance_level(list_subject, root: str, output_path: str):
     np.save(output_path + 'list_E2.npy', list_E2)
     np.save(output_path + 'list_E3.npy', list_E3)
 
-    _, pval_12 = ttest_ind(list_E1, list_E2, axis=2, alternative='two-sided', nan_policy='omit', equal_var=False)
+    _, pval_12 = ttest_ind(list_E1, list_E2, axis=2, alternative='two-sided',
+                           nan_policy='omit', equal_var=False)
     pval_12[np.isnan(pval_12)] = 1
 
-    _, pval_13 = ttest_ind(list_E1, list_E3, axis=2, alternative='two-sided', nan_policy='omit', equal_var=False)
+    _, pval_13 = ttest_ind(list_E1, list_E3, axis=2, alternative='two-sided',
+                           nan_policy='omit', equal_var=False)
     pval_13[np.isnan(pval_13)] = 1
 
-    _, pval_23 = ttest_ind(list_E2, list_E3, axis=2, alternative='two-sided', nan_policy='omit', equal_var=False)
+    _, pval_23 = ttest_ind(list_E2, list_E3, axis=2, alternative='two-sided',
+                           nan_policy='omit', equal_var=False)
     pval_23[np.isnan(pval_23)] = 1
 
     pval_all = np.stack([pval_12, pval_13, pval_23], axis=2)
-
     np.save(output_path + 'pvals_E12_E13_E23.npy', pval_all)
 
 
-def significance_level_evolution(subj_list, control_list, root, output_path):
+def significance_level_evolution(subj_list, control_list, root, output_path, list_temps):
+    '''
+    Computing the pvalue matrix between the E2-E1 for the patients and the controls.
+
+    Parameters
+    ----------
+    subj_list : list of str
+        List of the patients without the controls.
+    control_list : list of str
+        List of the controls.
+    root : str
+        Path to the root of the study.
+    output_path : str
+        Path to the output directory.
+    list_temps : list of str
+        List of the times between which the evolution of the patient should be made.
+
+    Returns
+    -------
+    None.
+
+    '''
 
     evolution_patient = []
     evolution_control = []
@@ -334,22 +354,26 @@ def significance_level_evolution(subj_list, control_list, root, output_path):
 
     for sub in list_subj:
 
-        path_E1 = (root + 'subjects/' + str(sub) + '_E1' + '/dMRI/tractography/' + str(sub) + '_E1' + '_connectivity_matrix_sift.npy')
-        path_E2 = (root + 'subjects/' + str(sub) + '_E2' + '/dMRI/tractography/' + str(sub) + '_E2' + '_connectivity_matrix_sift.npy')
+        path_E1 = (root + 'subjects/' + str(sub) + '_' + list_temps[0]
+                   + '/dMRI/tractography/' + str(sub) + '_' + list_temps[0]
+                   + '_connectivity_matrix_sift.npy')
+        path_E2 = (root + 'subjects/' + str(sub) + '_' + list_temps[1]
+                   + '/dMRI/tractography/' + str(sub) + '_' + list_temps[1]
+                   + '_connectivity_matrix_sift.npy')
 
         bool_E1 = False
         bool_E2 = False
 
-        if str(sub) + '_E1' in subj_list:
+        if str(sub) + '_' + list_temps[0] in subj_list:
             matrix_E1 = np.load(path_E1)
         else:
-            print('Connectivity matrix not found for ' + str(sub) + '_E1')
+            print('Connectivity matrix not found for ' + str(sub) + '_' + list_temps[0])
             bool_E1 = True
 
-        if str(sub) + '_E2' in subj_list:
+        if str(sub) + '_' + list_temps[1] in subj_list:
             matrix_E2 = np.load(path_E2)
         else:
-            print('Connectivity matrix not found for ' + str(sub) + '_E2')
+            print('Connectivity matrix not found for ' + str(sub) + '_' + list_temps[1])
             bool_E2 = True
 
         if bool_E1:
@@ -361,8 +385,10 @@ def significance_level_evolution(subj_list, control_list, root, output_path):
 
     for cont in list_control:
 
-        control_E1 = (root + 'subjects/' + str(cont) + '_E1' + '/dMRI/tractography/' + str(cont) + '_E1' + '_connectivity_matrix_sift.npy')
-        control_E2 = (root + 'subjects/' + str(cont) + '_E2' + '/dMRI/tractography/' + str(cont) + '_E2' + '_connectivity_matrix_sift.npy')
+        control_E1 = (root + 'subjects/' + str(cont) + '_E1' + '/dMRI/tractography/'
+                      + str(cont) + '_E1' + '_connectivity_matrix_sift.npy')
+        control_E2 = (root + 'subjects/' + str(cont) + '_E2' + '/dMRI/tractography/'
+                      + str(cont) + '_E2' + '_connectivity_matrix_sift.npy')
 
         bool_E1 = False
         bool_E2 = False
@@ -392,33 +418,35 @@ def significance_level_evolution(subj_list, control_list, root, output_path):
     np.save(output_path + 'evolution_patient.npy', evolution_patient)
     np.save(output_path + 'evolution_control.npy', evolution_control)
 
-    _, pval_12 = ttest_ind(evolution_patient, evolution_control, axis=2, alternative='two-sided', nan_policy='omit', equal_var=False)
+    _, pval_12 = ttest_ind(evolution_patient, evolution_control, axis=2,
+                           alternative='two-sided', nan_policy='omit', equal_var=False)
     pval_12[np.isnan(pval_12)] = 1
 
     a = np.array(pval_12)
+    name = list_temps[0].remplace('E', '') + list_temps[1].replace('E', '')
+    np.save(output_path + 'pvals_E' + name + '.npy', a)
 
-    np.save(output_path + 'pvals_E12.npy', a)
 
 # %% Cell 6 - Finding most relevant connectivity edges
-def get_edges_of_interest(pval_file: str, output_path: str,
-                          min_path: str) -> list:
+def get_edges_of_interest(pval_file: str, output_path: str, min_path: str,
+                          criterion: int = 10):
     '''
-    Returns the edges corresponding to low p-values
+    Returns the edges corresponding to low p-values in a .json file.
 
     Parameters
     ----------
     pval_file : str
         Path to .npy containing p-values of connectivity matrices.
-    output_path :str
-        ...
-    min_path :str
+    output_path : str
+        Path to the output directory.
+    min_path : str
         Path to arrays with the minimum number of connections.
+    criterion : int
+        Number of edges of interest returned in the file selected_edges.
 
     Returns
     -------
-    list
-        List of tuples containing the index of the regions cennected by the edge
-        interest
+    None.
 
     '''
 
@@ -439,24 +467,20 @@ def get_edges_of_interest(pval_file: str, output_path: str,
     else:
         comparisons = np.count_nonzero(pval != 1)
 
-    print(comparisons)
-
     pval_tresh = 0.05
     selec = np.argwhere(pval < pval_tresh)
     print('Number of significant values found: ', len(selec))
 
     # Multiple comparison pval correction
     # Bonferroni --------------------------------------
-
     pval_tresh = 0.05 / comparisons
     selec = np.argwhere(pval < pval_tresh)
-    print(selec)
+
     print('Number of significant values found with Bonferroni: ', len(selec))
 
-    if len(selec) < 5:
+    if len(selec) < criterion:
 
         # Benjamini-Hochberg ------------------------------
-
         pval_cand = np.sort(pval[pval != 1])
         pval_cand_copy = pval_cand.copy()
 
@@ -470,11 +494,12 @@ def get_edges_of_interest(pval_file: str, output_path: str,
         selec = np.argwhere(np.isin(pval, pval_cand[pval_cand != 1]))
 
         print('Number of significant values found with Benjamini: ', len(selec))
+        print(selec)
 
-    if len(selec) < 5:
+    if len(selec) < criterion:
 
         # Temporary candidate ------------------------------
-        selec = np.argwhere(np.isin(pval, pval_cand_copy[:10]))
+        selec = np.argwhere(np.isin(pval, pval_cand_copy[:criterion]))
         print('Minimum p-values used instead of multiple correction')
 
     # First values of candidate pvalues
@@ -492,8 +517,8 @@ def get_edges_of_interest(pval_file: str, output_path: str,
 
 
 # %% Cell 7 - Extract tract of interest
-def extract_streamline(edge: tuple, labels_path: str,
-                       streamlines_path: str, excel_path: str):
+def extract_streamline(edge: tuple, labels_path: str, streamlines_path: str,
+                       excel_path: str):
     '''
     Creates a new file with the streamlines connecting both regions specified in
     the tuple 'edge'.
@@ -501,7 +526,7 @@ def extract_streamline(edge: tuple, labels_path: str,
     Parameters
     ----------
     edge : tuple
-        Index of the regions of interest. Ex: (1,23)
+        Index of the regions of interest. Ex: [1,23].
     labels_path : str
         Path to volume containing the indexes.
     streamlines_path : str
@@ -519,8 +544,6 @@ def extract_streamline(edge: tuple, labels_path: str,
     affine = img.affine
 
     trk = load_tractogram(streamlines_path, 'same')
-    # trk.to_vox()
-    # trk.to_corner()
     streamlines = trk.streamlines
 
     df = pd.read_excel(excel_path)
@@ -550,12 +573,12 @@ def extract_streamline(edge: tuple, labels_path: str,
 # %% Cell 8 - Mean tract microstructure metrics
 def create_tensor_metrics(path: str):
     '''
-
+    Creation of the diamond tensor.
 
     Parameters
     ----------
     path : str
-        Ex: '/.../diamond/subjectName'
+        Ex: '/.../diamond/subjectName'.
 
     Returns
     -------
@@ -584,21 +607,22 @@ def create_tensor_metrics(path: str):
 
 def get_mean_tracts(trk_file: str, micro_path: str):
     '''
-    Return means for all metrics for a single patient using UNRAVEL
+    Return means and standard deviation dictionaries of all metrics for a single
+    patient using UNRAVEL.
 
     Parameters
     ----------
     trk_file : str
-        DESCRIPTION.
+        File of the considered track.
     micro_path : str
-        Patient specific path to microstructure folder
+        Patient specific path to microstructure folder.
 
     Returns
     -------
-    mean : TYPE
-        DESCRIPTION.
-    dev : TYPE
-        DESCRIPTION.
+    mean : dic
+        Dictionnary of the means of all metrics for this specific track.
+    dev : dic
+        Dictionnary of the standard deviation of all metrics for this specific track.
 
     '''
 
@@ -612,12 +636,10 @@ def get_mean_tracts(trk_file: str, micro_path: str):
     dev_dic = {}
 
     # Streamline count ---------------------
-
     mean_dic['stream_count'] = len(trk.streamlines._offsets)
     dev_dic['stream_count'] = 0
 
     # Diamond ------------------------------
-
     tensor_files = [micro_path + 'diamond/' + subject + '_diamond_t0.nii.gz',
                     micro_path + 'diamond/' + subject + '_diamond_t1.nii.gz']
 
@@ -651,7 +673,6 @@ def get_mean_tracts(trk_file: str, micro_path: str):
         dev_dic[m] = dev
 
     # Microstructure fingerprinting --------
-
     tensor_files = [micro_path + 'mf/' + subject + '_mf_peak_f0.nii.gz',
                     micro_path + 'mf/' + subject + '_mf_peak_f1.nii.gz']
 
@@ -682,12 +703,36 @@ def get_mean_tracts(trk_file: str, micro_path: str):
 
 
 # %% Cell 9 - Analysis
-def metrics_analysis(list_subjects: list, root: str, output_path: str, metric_name: list, edge_name: str):
+def metrics_analysis(list_subjects: list, root: str, output_path: str,
+                     metric_name: list, edge_file: str):
+    '''
+    Creation of a dictionary containing for all the patient, the mean and
+    standard deviation of all the metrics for the selected edges, the uf and the cc.
 
-    with open(edge_name, 'r') as read_file:
+    Parameters
+    ----------
+    list_subjects : list
+        List of the patients.
+    root : str
+        Path to the root.
+    output_path : str
+        Path to the output directory.
+    metric_name : list of str
+        List of the metrics to be analyzed.
+    edge_name : str
+        Path to the selected_edge file.
+
+    Returns
+    -------
+    None.
+
+    '''
+
+    with open(edge_file, 'r') as read_file:
         edge_name = json.load(read_file)
 
-    edge_name = add_regions(edge_name, ['cc_anterior_midbody_', 'cc_posterior_midbody_', 'cc_genu_', 'cc_splenium_', 'cc_isthmus_'])
+    edge_name += ['cc_anterior_midbody_', 'cc_posterior_midbody_', 'cc_genu_',
+                  'cc_splenium_', 'cc_isthmus_', 'uf_left', 'uf_right']
 
     dataframe = {}
 
@@ -701,19 +746,20 @@ def metrics_analysis(list_subjects: list, root: str, output_path: str, metric_na
 
         for i, r in enumerate(edge_name):
 
-            if str(r[0]) not in ['cc_anterior_midbody_', 'cc_posterior_midbody_', 'cc_genu_', 'cc_splenium_', 'cc_isthmus_', 'uf_left', 'uf_right']:
+            if str(r[0]) not in ['cc_anterior_midbody_', 'cc_posterior_midbody_',
+                                 'cc_genu_', 'cc_splenium_', 'cc_isthmus_',
+                                 'uf_left', 'uf_right']:
 
-                ROI = tract_to_ROI(root + '/subjects/' + sub
-                                   + '/dMRI/tractography/tois/' + sub
-                                   + '_tractogram_sift_' + str(r[1]) + '_'
+                ROI = tract_to_ROI(root + '/subjects/' + sub + '/dMRI/tractography/tois/'
+                                   + sub + '_tractogram_sift_' + str(r[1]) + '_'
                                    + str(r[0]) + '.trk')
+
                 dataframe['Mean'][sub][str(r[1]) + '_' + str(r[0])] = {}
                 dataframe['Dev'][sub][str(r[1]) + '_' + str(r[0])] = {}
 
             else:
-                ROI = tract_to_ROI(root + '/subjects/' + sub
-                                   + '/dMRI/tractography/tois/' + sub
-                                   + '_tractogram_' + str(r[0]) + '.trk')
+                ROI = tract_to_ROI(root + '/subjects/' + sub + '/dMRI/tractography/tois/'
+                                   + sub + '_tractogram_' + str(r[0]) + '.trk')
 
                 dataframe['Mean'][sub][str(r[0])] = {}
                 dataframe['Dev'][sub][str(r[0])] = {}
@@ -722,19 +768,16 @@ def metrics_analysis(list_subjects: list, root: str, output_path: str, metric_na
 
                 if m in ['FA', 'MD', 'RD', 'AD']:
                     model = 'dti'
-                elif m in ['noddi_fintra', 'noddi_fextra', 'noddi_fiso',
-                           'noddi_odi']:
+                elif m in ['noddi_fintra', 'noddi_fextra', 'noddi_fiso', 'noddi_odi']:
                     model = 'noddi'
-                elif m in ['diamond_wFA', 'diamond_wMD', 'diamond_wRD',
-                           'diamond_wAD', 'diamond_frac_ftot',
-                           'diamond_frac_csf']:
+                elif m in ['diamond_wFA', 'diamond_wMD', 'diamond_wRD', 'diamond_wAD',
+                           'diamond_frac_ftot', 'diamond_frac_csf']:
                     model = 'diamond'
                 else:
                     model = 'mf'
 
-                metric_map = nib.load(root + '/subjects/' + sub
-                                      + '/dMRI/microstructure/' + model + '/'
-                                      + sub + '_' + m + '.nii.gz').get_fdata()
+                metric_map = nib.load(root + '/subjects/' + sub + '/dMRI/microstructure/'
+                                      + model + '/' + sub + '_' + m + '.nii.gz').get_fdata()
 
                 metric_in_ROI = metric_map[ROI != 0]
 
@@ -746,17 +789,16 @@ def metrics_analysis(list_subjects: list, root: str, output_path: str, metric_na
                 if np.isnan(std_ROI):
                     std_ROI = 0
 
-                if str(r[0]) not in ['cc_anterior_midbody_', 'cc_posterior_midbody_', 'cc_genu_', 'cc_splenium_', 'cc_isthmus_', 'uf_left', 'uf_right']:
+                if str(r[0]) not in ['cc_anterior_midbody_', 'cc_posterior_midbody_',
+                                     'cc_genu_', 'cc_splenium_', 'cc_isthmus_',
+                                     'uf_left', 'uf_right']:
                     dataframe['Mean'][sub][str(r[1]) + '_' + str(r[0])][m] = mean_ROI
                     dataframe['Dev'][sub][str(r[1]) + '_' + str(r[0])][m] = std_ROI
                 else:
                     dataframe['Mean'][sub][str(r[0])][m] = mean_ROI
                     dataframe['Dev'][sub][str(r[0])][m] = std_ROI
 
-    json.dump(dataframe, open(output_path + 'metric_analysis.json', 'w'),
-              default=to_float64)
-
-    return output_path + 'metric_analysis.json'
+    json.dump(dataframe, open(output_path + 'metric_analysis.json', 'w'), default=to_float64)
 
 
 def get_mean_tracts_study(root: str, selected_edges_path: str,
@@ -767,9 +809,9 @@ def get_mean_tracts_study(root: str, selected_edges_path: str,
     Parameters
     ----------
     root : str
-        DESCRIPTION.
+        Path to the root directory.
     selected_edges_path : str
-        DESCRIPTION.
+        Path to the selected_edges file.
 
     Returns
     -------
@@ -784,8 +826,6 @@ def get_mean_tracts_study(root: str, selected_edges_path: str,
     with open(selected_edges_path, 'r') as read_file:
         edge_list = json.load(read_file)
 
-    subj_list = ['sub01_E1']
-
     dic_tot = {}
     dic_tot['Mean'] = {}
     dic_tot['Dev'] = {}
@@ -798,39 +838,34 @@ def get_mean_tracts_study(root: str, selected_edges_path: str,
         dic_tot['Mean'][sub] = {}
         dic_tot['Dev'][sub] = {}
 
+        # Selected edges
         for edge in edge_list:
 
             try:
                 trk_file = (tract_path + sub + '_tractogram_sift_'
                             + str(edge[0]) + '_' + str(edge[1]) + '.trk')
-
                 mean_dic, dev_dic = get_mean_tracts(trk_file, micro_path)
-
             except FileNotFoundError:
-                print('.trk file not found for edge ' + str(edge)
-                      + ' in patient ' + sub)
+                print('.trk file not found for edge ' + str(edge) + ' in ' + sub)
                 continue
             except IndexError:
                 print('IndexError with subject ' + sub)
                 continue
 
-            dic_tot['Mean'][sub][str(edge)] = mean_dic
-            dic_tot['Dev'][sub][str(edge)] = dev_dic
+            dic_tot['Mean'][sub]['[' + str(edge[0]) + ',' + str(edge[1]) + ']'] = mean_dic
+            dic_tot['Dev'][sub]['[' + str(edge[0]) + ',' + str(edge[1]) + ']'] = dev_dic
 
+        # CC and UF
         toi_list = ['cc_genu_', 'cc_isthmus_', 'cc_posterior_midbody_',
                     'cc_anterior_midbody_', 'cc_splenium_', 'uf_left', 'uf_right']
 
         for toi in toi_list:
 
             try:
-
                 trk_file = (tract_path + sub + '_tractogram_' + toi + '.trk')
-
                 mean_dic, dev_dic = get_mean_tracts(trk_file, micro_path)
-                print(tract_path + sub + '_tractogram_' + toi + '.trk')
             except FileNotFoundError:
-                print('.trk file not found for edge ' + str(edge)
-                      + ' in patient ' + sub)
+                print('.trk file not found for ' + str(toi) + ' in ' + sub)
                 continue
             except IndexError:
                 print('IndexError with subject ' + sub)
@@ -839,5 +874,4 @@ def get_mean_tracts_study(root: str, selected_edges_path: str,
             dic_tot['Mean'][sub][toi] = mean_dic
             dic_tot['Dev'][sub][toi] = dev_dic
 
-    json.dump(dic_tot, open(output_path + 'unravel_metric_analysis.json', 'w'),
-              default=to_float64)
+    json.dump(dic_tot, open(output_path + 'unravel_metric_analysis.json', 'w'), default=to_float64)
